@@ -1,0 +1,33 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug iOS Simulator (Expo)",
+            "request": "launch",
+            "type": "reactnative",
+            "cwd": "${workspaceFolder}",
+            "platform": "ios",
+            "target": "simulator",
+            "enableDebug": true,
+            "sourceMaps": true
+        },
+        {
+            "name": "Debug Android Emulator (Expo)",
+            "request": "launch",
+            "type": "reactnative",
+            "cwd": "${workspaceFolder}",
+            "platform": "android",
+            "target": "device",
+            "enableDebug": true,
+            "sourceMaps": true
+        },
+        {
+            "name": "Attach to Running App (Expo)",
+            "request": "attach",
+            "type": "reactnative",
+            "cwd": "${workspaceFolder}",
+            "enableDebug": true,
+            "sourceMaps": true
+        }
+    ]
+}

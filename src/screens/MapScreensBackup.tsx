@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Button, View, StyleSheet, TouchableOpacity, Text, Platform, Alert, Modal } from "react-native";
-import MapView, { Marker, PROVIDER_GOOGLE, Polygon, Region, LatLng, Callout } from "react-native-maps";
+import MapView, { Marker, PROVIDER_GOOGLE, Polygon, Region, LatLng } from "react-native-maps";
 import * as Location from "expo-location";
 import { TOKENS } from "../theme";
 import { TopBar } from "../components/TopBar";
@@ -8,13 +8,12 @@ import { useParcels } from "../store/useParcels";
 import { ParcelPeekCard } from "../components/ParcelPeekCard";
 import { CropTagSheet } from "../components/CropTagSheet";
 import { Parcel, CropCycle } from "../types";
-import { initDB, addCrop, getCrops, getCropsList, Crop, deleteCrop } from "../Database";
+import { initDB, addCrop, getCrops, getCropsList, Crop } from "../Database";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../App";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import * as SQLite from "expo-sqlite";
-
 
 export const MapScreen: React.FC = () => {
   const db = SQLite.openDatabaseSync("crops.db");
@@ -27,7 +26,7 @@ export const MapScreen: React.FC = () => {
   const [crops, setCrops] = useState<any[]>([]);
   const router = useRouter();
   const [points, setPoints] = useState<LatLng[]>([]);
-  
+  const [selectedCrop, setSelectedCrop] = useState<number | null>(null);  
   const [finalized, setFinalized] = useState(false);
   const [region, setRegion] = useState<Region>({
     latitude: 13.6145,
@@ -37,8 +36,6 @@ export const MapScreen: React.FC = () => {
   });
   const COLORS = ["#FF5733", "#33FF57", "#3357FF", "#FFC300", "#8E44AD"];
   const [selectedCrp, setSelectedCrp] = useState<Crop | null>(null);
-  const [highlightedPolygonId, setHighlightedPolygonId] = useState<number | null>(null);
-  const { selectedCropFromSummaryPage } = useLocalSearchParams(); 
 
   const closeModal = () => setSelectedCrp(null);
 
@@ -82,10 +79,18 @@ export const MapScreen: React.FC = () => {
       cycles: [],
     };
     addParcel(p);
-    // setSelectedCrp()
-    setSelected(p);
+    // setSelected(p);
     // bring up add crop component
     setSheet(true); 
+
+    // onLongPress(points);
+    // // Save to DB (example: cropId=1)
+    // db.runAsync(
+    //   "UPDATE crops SET boundary = ? WHERE id = ?",
+    //   [JSON.stringify(points), 1] // replace 1 with the crop ID in context
+    // )
+    // .then(() => Alert.alert("Boundary saved for crop!"))
+    // .catch((err) => console.error(err));
   };
 
   async function handleAddCropHere() {
@@ -151,6 +156,30 @@ export const MapScreen: React.FC = () => {
     Alert.alert("Crop Tagged ✅", `${cropName} added at (${latitude}, ${longitude})`);
   }
 
+ 
+
+  const handleZoomIn = () => {
+    if(mapRef.current) {
+      mapRef.current.animateToRegion({
+        latitude: 37.78825,
+        longitude: -122.4324,
+        latitudeDelta: 0.01, // smaller delta = zoom in
+        longitudeDelta: 0.01,
+      });
+    }
+  };
+
+  const handleZoomOut = () => {
+    if(mapRef.current) {
+      mapRef.current.animateToRegion({
+        latitude: 37.78825,
+        longitude: -122.4324,
+        latitudeDelta: 0.2, // larger delta = zoom out
+        longitudeDelta: 0.2,
+      });
+    }
+  };
+
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -161,55 +190,8 @@ export const MapScreen: React.FC = () => {
       await initDB();
       const rows = await getCropsList();
       setCrops(rows);
-      if(selectedCropFromSummaryPage) {
-        focusOnEarliestPolygon(selectedCropFromSummaryPage.toString());
-      }
     })();
-  }, [crops.length]);
-
-
-  const focusOnEarliestPolygon = (cropName: string) => {
-    const filtered = crops.filter((c) => c.cropName === cropName);
-    if(filtered.length === 0) return;
-
-    const earliest = filtered.reduce((earliest, current) => 
-      new Date(current.harvestDate) < new Date(earliest.harvestDate) 
-      ? current 
-      : earliest
-    );
-
-    try {
-      const boundaryData = 
-        typeof earliest.boundary === 'string'
-        ? JSON.parse(earliest.boundary)
-        : earliest.boundary;
-      
-        if(Array.isArray(boundaryData) && boundaryData.length > 0) {
-          const latSum = boundaryData.reduce((sum, p) => sum + p.latitude, 0);
-          const longSum = boundaryData.reduce((sum, p) => sum + p.longitude, 0);
-          const center = {
-            latitude: latSum / boundaryData.length,
-            longitude: longSum / boundaryData.length,
-          };
-
-          setHighlightedPolygonId(earliest.id);
-          mapRef.current?.fitToCoordinates(boundaryData, {
-            edgePadding: {
-              top: 100,
-              right: 100,
-              bottom: 100,
-              left: 100
-            },
-            animated: true
-          });
-        } else {
-          console.warn("No valid boundary points found for crop: ", cropName);
-        }
-
-    } catch(error) {
-      console.warn("No valid boundary points found for crop: ", cropName);
-    }
-  };
+  }, []);
 
 
   function flyTo(lat: number, lon: number, label?: string) {
@@ -225,52 +207,8 @@ export const MapScreen: React.FC = () => {
     addCropWithLandBoundary(c);
   }
 
-  function getPolygonCentroid(points: LatLng[]): LatLng {
-    let x = 0, y = 0;
-    for (const p of points) {
-      x += p.latitude;
-      y += p.longitude;
-    }
-    return {
-      latitude: x / points.length,
-      longitude: y / points.length
-    };
-  }
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  
-  async function handleDelete() {
-    const cropId = selectedCrp?.id;
-    if(cropId) {
-      await deleteCrop(cropId);
-      Alert.alert(`Crop with ${cropId} deleted ✅`);  
-      const rows = await getCropsList();
-      const deletedCrop = rows.filter(r => r.id == cropId);
-      console.log("deletedCrop: " + deletedCrop[0].cropName);
-      setCrops(rows);
-      closeModal();
-    } else {
-      Alert.alert("Crop deletion needs an ID");
-      return;
-    }
-  }
-
-  const reverseGeocode = async (locationStr: string): Promise<string> => {
-    try {
-        const [lat, lng] = locationStr.split(":").map(s => parseFloat(s));
-        // const lat: number = 38.949551;
-        // const lng: number = -121.134732;
-        const res = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng});
-        if(res && res.length > 0) {
-            const place = res[0];
-            return `${place.subregion || place.city || place.region || "Unknown"}`;
-        }
-        return "Unknown";
-    } catch(e) {
-        console.warn("Reverse geocode failed: ", e);
-        return "Unknown";
-    }
-  };
   
   return (
     <View style={styles.container}>
@@ -284,72 +222,63 @@ export const MapScreen: React.FC = () => {
         customMapStyle={lightMapStyle}
         onRegionChangeComplete={(r) => setRegion(r)} // keep track of the region from the currently visible region
       >
+        {parcels.map((p) => {
+          const status = getStatusForParcel(p.id);
+          const color = status === "OVERDUE" ? TOKENS.danger : status === "DUE_SOON" ? TOKENS.info : TOKENS.success;
+          return (
+            <Marker
+              key={p.id}
+              coordinate={p.point}
+              pinColor={color}
+              onPress={() => setSelected(p)}
+            />
+          );
+        })}
+        {crops.map((crop) => (
+          <Marker
+            key={crop.id}
+            coordinate={{ latitude: crop.latitude, longitude: crop.longitude }}
+            title={crop.cropName}
+            description={`Qty: ${crop.quantity} | Harvest: ${crop.harvestDate}`}
+          />
+        ))}
         {/* Marker for each tap */}
         {points.map((p, idx) => (
           <Marker key={idx} coordinate={p} />
         ))}
 
+        {/* Polygon showing land boundary */}
+        {/* {points.length > 2 && (
+          <Polygon
+            coordinates={points}
+            strokeColor="rgba(108,92,231,1)" // violet border
+            fillColor="rgba(108,92,231,0.2)" // translucent fill
+            strokeWidth={2}
+          />
+        )} */}
+
         {crops.map((crop, index) => {
           if (!crop.boundary) return null;
-          let centroid: LatLng;
+
           let coordinates: LatLng[];
-          let sortedPoints: LatLng[];
           try {
             coordinates = JSON.parse(crop.boundary);
-            // Step 1: find centroid
-            centroid = {
-              latitude:
-                coordinates.reduce((sum, p) => sum + p.latitude, 0) /
-                coordinates.length,
-              longitude:
-                coordinates.reduce((sum, p) => sum + p.longitude, 0) /
-                coordinates.length,
-            };
-
-            // Step 2: sort by angle around centroid
-            sortedPoints = [...coordinates].sort((a, b) => {
-              const angleA = Math.atan2(a.latitude - centroid.latitude, a.longitude - centroid.longitude);
-              const angleB = Math.atan2(b.latitude - centroid.latitude, b.longitude - centroid.longitude);
-              return angleA - angleB;
-            });
-
           } catch (e) {
             console.error("Invalid boundary JSON", e);
             return null;
           }
 
           return (
-            <>
-              <Polygon
-                key={crop.id}
-                coordinates={sortedPoints}
-                strokeColor={highlightedPolygonId === crop.id ? '#FFD700' : "black" }
-                strokeWidth={highlightedPolygonId === crop.id ? 3 : 1.5}
-                fillColor={
-                  highlightedPolygonId === crop.id
-                  ? 'rgba(255, 215, 0, 0.4)' // light gold fill
-                  : 'rgba(34, 139, 34, 0.3)' // normal green
-                  // `${COLORS[index % COLORS.length]}55`
-                } // semi-transparent fill
-                tappable
-                onPress={async () => {
-                  const reverseGeocodeLocation = await reverseGeocode(crop.location);
-                  crop.locationName = reverseGeocodeLocation;
-                  setSelectedCrp(crop)
-                }} // <-- open modal on tap
-                // onTouchStart={}
-              />
-              <Marker coordinate={centroid}>
-                <Callout>
-                  <React.Fragment>
-                    <Text style={{ fontWeight: "bold" }}>{crop.cropName}</Text>
-                    <Text>Harvest: {crop.harvestDate}</Text>
-                    <Text>Qty: {crop.quantity} ton</Text>
-                    <Text>Loc: {crop.locationName}</Text>
-                  </React.Fragment>
-                </Callout>
-            </Marker>
-          </>
+            <Polygon
+              key={crop.id}
+              coordinates={coordinates}
+              strokeColor="black"
+              strokeWidth={2}
+              fillColor={`${COLORS[index % COLORS.length]}55`} // semi-transparent fill
+              tappable
+              onPress={() => setSelectedCrp(crop)} // <-- open modal on tap
+              // onTouchStart={}
+            />
           );
         })}
       </MapView>
@@ -368,11 +297,8 @@ export const MapScreen: React.FC = () => {
                 <Text style={styles.title}>{selectedCrp?.cropName}</Text>
                 <Text>Harvest Date: {selectedCrp?.harvestDate}</Text>
                 <Text>Quantity: {selectedCrp?.quantity}</Text>
-                <Text>Location: {selectedCrp?.locationName}</Text>
+                <Text>Location: {selectedCrp?.location}</Text>
 
-                <TouchableOpacity onPress={handleDelete} style={styles.button}>
-                  <Text style={styles.buttonText}>Delete</Text>
-                </TouchableOpacity>
                 <TouchableOpacity onPress={closeModal} style={styles.button}>
                   <Text style={styles.buttonText}>Close</Text>
                 </TouchableOpacity>
@@ -385,13 +311,32 @@ export const MapScreen: React.FC = () => {
 
       {/* FABs */}
       <View style={styles.fabs}>
+        {/* <TouchableOpacity style={[styles.fab, { backgroundColor: TOKENS.primary }]} onPress={() => selected && setSheet(true)} activeOpacity={0.9}> */}
+        {/* <TouchableOpacity style={[styles.fab, { backgroundColor: TOKENS.primary }]} onPress={handleAddCropHere} activeOpacity={0.9}>
+          <Text style={styles.fabText}>Tag Crop Here</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.fab, { backgroundColor: TOKENS.surface, borderWidth: 1, borderColor: TOKENS.border }]} onPress={() => selected && flyTo(selected.point.latitude, selected.point.longitude)}>
+          <Text style={[styles.fabText, { color: TOKENS.text }]}>My Location</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.fab, { backgroundColor: TOKENS.primary }]} onPress={() => router.push("/(tabs)/explore")} activeOpacity={0.9}>
+          <Text style={[styles.fabText]}>View Crop List</Text>
+        </TouchableOpacity> */}
+        {/* <View style={styles.controls}> */}
         <Button title="Clear" onPress={handleClear} />
         <Button title="Zoom In" onPress={() => handleZoom(true)} />
         <Button title="Zoom Out" onPress={() => handleZoom(false)} />
         {!finalized && <Button title="Finalize" onPress={handleFinalize}/>}
-        <Button title="Crop Summary" onPress={() => {router.push("/crops-summary")}}/>
+      {/* </View> */}
       </View>
-      
+
+      {/* {selected && (
+        <ParcelPeekCard
+          parcel={selected}
+          status={getStatusForParcel(selected.id)}
+          onEdit={() => setSheet(true)}
+        />
+      )} */}
+
       <CropTagSheet visible={sheet} onClose={() => setSheet(false)} onSave={onSaveCycle} />
     </View>
   );
