@@ -1,0 +1,21 @@
+{
+    "appTitle": "Vana Smrithi",
+    "viewCrops": "View Crops",
+    "cropsSummary": "Crops Summary",
+    "cropName": "Crop Name",
+    "quantity": "Quantity",
+    "totalQuantity": "Total Quantity",
+    "averageYieldNearby": "Average Yield Nearby",
+    "ton": "Ton",
+    "harvestDate": "Harvest Date",
+    "earliestHarvest": "Earliest Harvest",
+    "location": "Location",
+    "noData": "No crops available.",
+    "delete": "Delete",
+    "close": "Close",
+    "zoomOut": "Zoom Out",
+    "zoomIn": "Zoom In",
+    "clear": "Clear",
+    "finalize": "Finalize",
+    "selectLanguage": "Select Language"
+}

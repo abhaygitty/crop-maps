@@ -4,6 +4,7 @@ import { Crop, getCropsList } from "../src/Database";
 import * as SQLite from "expo-sqlite";
 import * as Location from "expo-location";
 import { router } from "expo-router";
+import { useTranslation } from "react-i18next";
 
 interface CropSummary {
     cropName: string;
@@ -19,6 +20,7 @@ const CropSummaryScreen = () => {
     const [summaries, setSummaries] = useState<CropSummary[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState("");
+    const { t } = useTranslation();
 
     useEffect(() => {
         loadCropSummary();
@@ -132,11 +134,11 @@ const CropSummaryScreen = () => {
             }}
         >
             <View style={styles.card}>
-                <Text style={styles.crop}>{item.cropName}</Text>
+                <Text style={styles.crop}>{t("cropName")}: {item.cropName}</Text>
                 <Text>📍 {item.locationName}</Text>
-                <Text>🌾 Total Quantity: {item.totalQuantity} kg</Text>
-                <Text>📅 Earliest Harvest: {item.earliestHarvest}</Text>
-                <Text>📊 Avg Yield Nearby (1000 km): {item.avgYieldNearby} ton</Text>
+                <Text>🌾 {t("totalQuantity")}: {item.totalQuantity} {t("ton")}</Text>
+                <Text>📅 {t("earliestHarvest")}: {item.earliestHarvest}</Text>
+                <Text>📊 {t("averageYieldNearby")} (1000 km): {item.avgYieldNearby} ton</Text>
             </View>
         </TouchableOpacity>
         
@@ -161,7 +163,6 @@ const CropSummaryScreen = () => {
                     renderItem={renderItem}
                 />
             )}
-            <Button title="View Crop Summary coming shortly...****" />  
         </View>
     );
 };

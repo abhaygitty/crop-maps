@@ -1,31 +1,32 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Button, View, StyleSheet, TouchableOpacity, Text, Platform, Alert, Modal } from "react-native";
+import { Picker } from "@react-native-picker/picker";
 import MapView, { Marker, PROVIDER_GOOGLE, Polygon, Region, LatLng, Callout } from "react-native-maps";
 import * as Location from "expo-location";
 import { TOKENS } from "../theme";
 import { TopBar } from "../components/TopBar";
 import { useParcels } from "../store/useParcels";
-import { ParcelPeekCard } from "../components/ParcelPeekCard";
 import { CropTagSheet } from "../components/CropTagSheet";
 import { Parcel, CropCycle } from "../types";
 import { initDB, addCrop, getCrops, getCropsList, Crop, deleteCrop } from "../Database";
-import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from "../../App";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as SQLite from "expo-sqlite";
-
+import { useTranslation } from "react-i18next";
+import LanguageSelector from "../components/LanguageSelector";
 
 export const MapScreen: React.FC = () => {
   const db = SQLite.openDatabaseSync("crops.db");
   
-  // states
+  // states and hooks
+  const router = useRouter();
   const mapRef = useRef<MapView | null>(null);
+  const { t, i18n } = useTranslation();
   const { parcels, addParcel, addOrUpdateCycle, getStatusForParcel } = useParcels();
+
   const [selected, setSelected] = useState<Parcel | null>(null);
   const [sheet, setSheet] = useState(false);
   const [crops, setCrops] = useState<any[]>([]);
-  const router = useRouter();
+  
   const [points, setPoints] = useState<LatLng[]>([]);
   
   const [finalized, setFinalized] = useState(false);
@@ -39,8 +40,19 @@ export const MapScreen: React.FC = () => {
   const [selectedCrp, setSelectedCrp] = useState<Crop | null>(null);
   const [highlightedPolygonId, setHighlightedPolygonId] = useState<number | null>(null);
   const { selectedCropFromSummaryPage } = useLocalSearchParams(); 
+  const [selectedLang, setSelectedLang] = useState(i18n.language);
+
+  const handleLanguageChange = async (lang: string) => {
+    setSelectedLang(lang);
+    i18n.changeLanguage(lang);
+    // await AsyncStorage.setItem("appLanguage", lang);
+  };
 
   const closeModal = () => setSelectedCrp(null);
+
+  const switchLanguage = (lang: string) => {
+    i18n.changeLanguage(lang);
+  };
 
   const handleZoom = (zoomIn: boolean) => {
     const factor = zoomIn ? 0.5 : 2; // shrink delta = zoom in; expand delta = zoom out
@@ -225,20 +237,6 @@ export const MapScreen: React.FC = () => {
     addCropWithLandBoundary(c);
   }
 
-  function getPolygonCentroid(points: LatLng[]): LatLng {
-    let x = 0, y = 0;
-    for (const p of points) {
-      x += p.latitude;
-      y += p.longitude;
-    }
-    return {
-      latitude: x / points.length,
-      longitude: y / points.length
-    };
-  }
-
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  
   async function handleDelete() {
     const cropId = selectedCrp?.id;
     if(cropId) {
@@ -271,9 +269,12 @@ export const MapScreen: React.FC = () => {
         return "Unknown";
     }
   };
-  
+
   return (
     <View style={styles.container}>
+      <Text style={{ fontSize: 22, fontWeight: "bold" }}>{t("appTitle")}</Text>
+    
+
       <MapView
         ref={mapRef}
         style={StyleSheet.absoluteFill}
@@ -343,9 +344,9 @@ export const MapScreen: React.FC = () => {
                 <Callout>
                   <React.Fragment>
                     <Text style={{ fontWeight: "bold" }}>{crop.cropName}</Text>
-                    <Text>Harvest: {crop.harvestDate}</Text>
-                    <Text>Qty: {crop.quantity} ton</Text>
-                    <Text>Loc: {crop.locationName}</Text>
+                    <Text>{t("harvestDate")}: {crop.harvestDate}</Text>
+                    <Text>{t("quantity")}: {crop.quantity} {t("ton")}</Text>
+                    <Text>{t("location")}: {crop.locationName}</Text>
                   </React.Fragment>
                 </Callout>
             </Marker>
@@ -366,15 +367,15 @@ export const MapScreen: React.FC = () => {
             {selectedCrp && (
               <>
                 <Text style={styles.title}>{selectedCrp?.cropName}</Text>
-                <Text>Harvest Date: {selectedCrp?.harvestDate}</Text>
-                <Text>Quantity: {selectedCrp?.quantity}</Text>
-                <Text>Location: {selectedCrp?.locationName}</Text>
+                <Text>{t("harvestDate")}: {selectedCrp?.harvestDate}</Text>
+                <Text>{t("quantity")}: {selectedCrp?.quantity} {t("ton")}</Text>
+                <Text>{t("location")}: {selectedCrp?.locationName}</Text>
 
                 <TouchableOpacity onPress={handleDelete} style={styles.button}>
-                  <Text style={styles.buttonText}>Delete</Text>
+                  <Text style={styles.buttonText}>{t("delete")}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={closeModal} style={styles.button}>
-                  <Text style={styles.buttonText}>Close</Text>
+                  <Text style={styles.buttonText}>{t("close")}</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -382,15 +383,45 @@ export const MapScreen: React.FC = () => {
         </View>
       </Modal>
       <TopBar onFlyTo={flyTo} />
-
+      
+      {/* <View style={styles.container1}> */}
+        {/* <Text style={styles.label}>🌐 Select Language</Text> */}
+        {/* <View style={styles.pickerContainer}> */}
+          <Picker
+              selectedValue={selectedLang}
+              onValueChange={handleLanguageChange}
+              mode={Platform.OS === "android" ? "dropdown" : "dialog" }
+              style={styles.picker}
+          >
+              <Picker.Item label="English" value="en"/>
+              <Picker.Item label="हिन्दी (Hindi)" value="hi" />
+              <Picker.Item label="ಕನ್ನಡ (Kannada)" value="kn" />
+              <Picker.Item label="தமிழ் (Tamil)" value="ta" />
+              <Picker.Item label="తెలుగు (Telugu)" value="te" />
+              <Picker.Item label="മലയാളം (Malayalam)" value="ml" />
+          </Picker>
+        {/* </View> */}
+      {/* </View> */}
       {/* FABs */}
       <View style={styles.fabs}>
-        <Button title="Clear" onPress={handleClear} />
-        <Button title="Zoom In" onPress={() => handleZoom(true)} />
-        <Button title="Zoom Out" onPress={() => handleZoom(false)} />
-        {!finalized && <Button title="Finalize" onPress={handleFinalize}/>}
-        <Button title="Crop Summary" onPress={() => {router.push("/crops-summary")}}/>
+        {/* <LanguageSelector /> */}
+        <Button title={t("clear")}onPress={handleClear} />
+        <Button title={t("zoomIn")} onPress={() => handleZoom(true)} />
+        <Button title={t("zoomOut")} onPress={() => handleZoom(false)} />
+        {!finalized && <Button title={t("finalize")}onPress={handleFinalize}/>}
+        <Button title={t("cropsSummary")} onPress={() => {router.push("/crops-summary")}}/>
       </View>
+
+        {/* Language selector */}
+      {/* <Text style={{ marginTop: 20 }}>{t("selectLanguage")}</Text>
+      <View style={{ flexDirection: "row", marginTop: 10 }}>
+        <Button title="English" onPress={() => switchLanguage("en")} />
+        <View style={{ width: 10 }} />
+        <Button title="हिन्दी" onPress={() => switchLanguage("hi")} />
+        <View style={{ width: 10 }} />
+        <Button title="ಕನ್ನಡ" onPress={() => switchLanguage("kn")} />
+      </View> */}
+
       
       <CropTagSheet visible={sheet} onClose={() => setSheet(false)} onSave={onSaveCycle} />
     </View>
@@ -437,6 +468,28 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "#fff",
     fontWeight: "bold",
+  },
+  picker: {
+    height: Platform.OS === "ios" ? 180 : 50,
+    width: "100%",
+  },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    overflow: "hidden",
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 6,
+  },
+  container1: {
+    margin: 10,
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 10,
+    elevation: 4,
   },
 });
 
