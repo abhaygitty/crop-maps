@@ -1,0 +1,21 @@
+{
+    "appTitle": "வன ஸ்மிருதி",
+    "viewCrops": "பயிர்களைப் பார்க்க",
+    "cropsSummary": "பயிர் சுருக்கம்",
+    "cropName": "பயிர் பெயர்",
+    "quantity": "அளவு",
+    "totalQuantity": "மொத்த அளவு",
+    "averageYieldNearby": "அருகிலுள்ள சராசரி விளைச்சல்",
+    "ton": "டன்",
+    "harvestDate": "அறுவடை தேதி",
+    "earliestHarvest": "முதல் அறுவடை",
+    "location": "இடம்",
+    "noData": "பயிர் தரவு இல்லை.",
+    "delete": "அழி",
+    "close": "மூடு",
+    "zoomOut": "சிறிதாக்கு",
+    "zoomIn": "பெரிதாக்கு",
+    "clear": "அழி",
+    "finalize": "இறுதி செய்",
+    "selectLanguage": "மொழியைத் தேர்ந்தெடுக்கவும்"
+}

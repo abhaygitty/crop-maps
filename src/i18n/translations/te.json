@@ -1,0 +1,21 @@
+{
+    "appTitle": "వన స్మృతి",
+    "viewCrops": "పంటలను చూడండి",
+    "cropsSummary": "పంటల సారాంశం",
+    "cropName": "పంట పేరు",
+    "quantity": "పరిమాణం",
+    "totalQuantity": "మొత్తం పరిమాణం",
+    "averageYieldNearby": "సమీప సగటు దిగుబడి",
+    "ton": "టన్ను",
+    "harvestDate": "పంట తీయు తేది",
+    "earliestHarvest": "తొలి పంట",
+    "location": "స్థానం",
+    "noData": "పంటల డేటా అందుబాటులో లేదు.",
+    "delete": "తొలగించు",
+    "close": "మూసివేయి",
+    "zoomOut": "జూమ్ అవుట్",
+    "zoomIn": "జూమ్ ఇన్",
+    "clear": "స్పష్టంచేయి",
+    "finalize": "తుది రూపం ఇవ్వు",
+    "selectLanguage": "భాషను ఎంచుకోండి"
+}

@@ -1,0 +1,21 @@
+{
+    "appTitle": "വന സ്മൃതി",
+    "viewCrops": "വിളകൾ കാണുക",
+    "cropsSummary": "വിളകളുടെ സംഗ്രഹം",
+    "cropName": "വിളയുടെ പേര്",
+    "quantity": "അളവ്",
+    "totalQuantity": "ആകെ അളവ്",
+    "averageYieldNearby": "അടുത്തുള്ള ശരാശരി വിളവെടുപ്പ്",
+    "ton": "ടൺ",
+    "harvestDate": "വിളവെടുപ്പ് തീയതി",
+    "earliestHarvest": "ആദ്യ വിളവെടുപ്പ്",
+    "location": "സ്ഥലം",
+    "noData": "വിളകളുടെ ഡാറ്റയില്ല.",
+    "delete": "ഇല്ലാതാക്കുക",
+    "close": "അടയ്ക്കുക",
+    "zoomOut": "ചെറുതാക്കുക",
+    "zoomIn": "വലുതാക്കുക",
+    "clear": "മായ്ക്കുക",
+    "finalize": "പൂർത്തിയാക്കുക",
+    "selectLanguage": "ഭാഷ തിരഞ്ഞെടുക്കുക"
+}

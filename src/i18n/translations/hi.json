@@ -1,0 +1,22 @@
+{
+    "appTitle": "वन स्मृति",
+    "viewCrops": "फसलें देखें",
+    "cropsSummary": "फसल सारांश",
+    "cropName": "फसल का नाम",
+    "quantity": "मात्रा",
+    "totalQuantity": "कुल मात्रा",
+    "averageYieldNearby": "आस-पास की औसत उपज",
+    "ton": "टन",
+    "harvestDate": "कटाई की तारीख",
+    "earliestHarvest": "जल्द से जल्द फसल",
+    "location": "स्थान",
+    "noData": "कोई फसल उपलब्ध नहीं है।",
+    "delete": "हटाएं",
+    "close": "बंद करना",
+    "zoomOut": "ज़ूम आउट",
+    "zoomIn": "ज़ूम इन",
+    "clear": "स्पष्ट",
+    "finalize": "संपन्न करें",
+    "selectLanguage": "भाषा चुनें"
+}
+  
