@@ -12,24 +12,28 @@ export default function LanguageSelector() {
     };
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.label}>🌐 Select Language</Text>
-            <View style={styles.pickerContainer}>
-                <Picker
-                    selectedValue={selectedLang}
-                    onValueChange={handleLanguageChange}
-                    mode={Platform.OS === "android" ? "dropdown" : "dialog" }
-                    style={styles.picker}
-                >
-                    <Picker.Item label="English" value="en"/>
-                    <Picker.Item label="हिन्दी (Hindi)" value="hi" />
-                    <Picker.Item label="ಕನ್ನಡ (Kannada)" value="kn" />
-                    <Picker.Item label="தமிழ் (Tamil)" value="ta" />
-                    <Picker.Item label="తెలుగు (Telugu)" value="te" />
-                    <Picker.Item label="മലയാളം (Malayalam)" value="ml" />
-                </Picker>
-            </View>
-        </View>
+        // <View style={styles.container}>
+        //  {/* <Text style={styles.label}>🌐 Select Language</Text> */}
+        //     {/* <View style={styles.pickerContainer}> */}
+            
+        //     {/* </View> */}
+        // </View>
+        <>
+            <Picker
+                selectedValue={selectedLang}
+                onValueChange={handleLanguageChange}
+                mode={Platform.OS === "android" ? "dropdown" : "dialog" }
+                style={styles.picker}
+            >
+                <Picker.Item label="English" value="en"/>
+                <Picker.Item label="हिन्दी (Hindi)" value="hi" />
+                <Picker.Item label="ಕನ್ನಡ (Kannada)" value="kn" />
+                <Picker.Item label="தமிழ் (Tamil)" value="ta" />
+                <Picker.Item label="తెలుగు (Telugu)" value="te" />
+                <Picker.Item label="മലയാളം (Malayalam)" value="ml" />
+            </Picker>
+        </>
+           
     )
 }
 

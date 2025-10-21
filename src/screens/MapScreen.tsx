@@ -17,6 +17,14 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import * as SQLite from "expo-sqlite";
 import { useTranslation } from "react-i18next";
 import LanguageSelector from "../components/LanguageSelector";
+import { Ionicons } from "@expo/vector-icons";
+import Animated, {
+  useSharedValue,
+  withTiming,
+  useAnimatedStyle,
+} from "react-native-reanimated";
+import VoiceTranscriptionBox from "../components/VoiceTranscriptionBox";
+import VoiceRecorder from "../components/VoiceRecorder";
 
 
 export const MapScreen: React.FC = () => {
@@ -31,7 +39,9 @@ export const MapScreen: React.FC = () => {
   const [crops, setCrops] = useState<any[]>([]);
   const router = useRouter();
   const [points, setPoints] = useState<LatLng[]>([]);
-  
+  const height = useSharedValue(0);
+ 
+
   const [finalized, setFinalized] = useState(false);
   const [region, setRegion] = useState<Region>({
     latitude: 13.6145,
@@ -44,6 +54,13 @@ export const MapScreen: React.FC = () => {
   const [highlightedPolygonId, setHighlightedPolygonId] = useState<number | null>(null);
   const { selectedCropFromSummaryPage } = useLocalSearchParams(); 
   const [selectedLang, setSelectedLang] = useState(i18n.language);
+  const [isLanguagePicker, setIsLanguagePicker] = useState(false);
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: height.value,
+    transform: [{ scaleY: height.value }],
+  }));
+
+  const [transcription, setTranscription] = useState<string | null>(null);
 
   const handleLanguageChange = async (lang: string) => {
     setSelectedLang(lang);
@@ -283,6 +300,12 @@ export const MapScreen: React.FC = () => {
     }
   };
   
+  const togglePicker = () => {
+    const newValue = !isLanguagePicker;
+    setIsLanguagePicker(newValue);
+    height.value = withTiming(newValue ? 1 : 0, { duration: 300 });
+  };
+
   return (
     <View style={styles.container}>
       <MapView
@@ -393,23 +416,22 @@ export const MapScreen: React.FC = () => {
         </View>
       </Modal>
       <TopBar onFlyTo={flyTo} />
-      
-      <Picker
-          selectedValue={selectedLang}
-          onValueChange={handleLanguageChange}
-          mode={Platform.OS === "android" ? "dropdown" : "dialog" }
-          style={styles.picker}
-      >
-          <Picker.Item label="English" value="en"/>
-          <Picker.Item label="हिन्दी (Hindi)" value="hi" />
-          <Picker.Item label="ಕನ್ನಡ (Kannada)" value="kn" />
-          <Picker.Item label="தமிழ் (Tamil)" value="ta" />
-          <Picker.Item label="తెలుగు (Telugu)" value="te" />
-          <Picker.Item label="മലയാളം (Malayalam)" value="ml" />
-      </Picker>
+      <TouchableOpacity style={styles.toggleButton} onPress={togglePicker}>
+        <Ionicons name="language" size={22} color="#fff" />
+      </TouchableOpacity>
+
+      <Animated.View style={[styles.languageContainer, animatedStyle]}>
+        {isLanguagePicker && <LanguageSelector />}
+      </Animated.View>
+     
+      <VoiceTranscriptionBox 
+        text={transcription}
+        onClose={() => setTranscription(null)}
+      />
+
       {/* FABs */}
       <View style={styles.fabs}>
-        {/* <LanguageSelector /> */}
+        <VoiceRecorder onTranscription={setTranscription}/>
         <Button title={t("clear")}onPress={handleClear} />
         <Button title={t("zoomIn")} onPress={() => handleZoom(true)} />
         <Button title={t("zoomOut")} onPress={() => handleZoom(false)} />
@@ -418,6 +440,7 @@ export const MapScreen: React.FC = () => {
       </View>
       
       <CropTagSheet visible={sheet} onClose={() => setSheet(false)} onSave={onSaveCycle} />
+        
     </View>
   );
 };
@@ -466,6 +489,33 @@ const styles = StyleSheet.create({
   picker: {
     height: Platform.OS === "ios" ? 180 : 50,
     width: "100%",
+  },
+  toggleButton: {
+    position: "absolute",
+    top: 90,
+    right: 20,
+    zIndex: 20,
+    backgroundColor: "#1DB954",
+    borderRadius: 25,
+    padding: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  languageContainer: {
+    position: "absolute",
+    top: 100,
+    right: 20,
+    left: 20,
+    zIndex: 10,
+    // backgroundColor: "#ffffffee",
+    borderRadius: 12,
+    padding: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    elevation: 3,
   },
 });
 
