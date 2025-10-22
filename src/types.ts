@@ -19,3 +19,11 @@ export interface Parcel {
   areaHa?: number;
   cycles: CropCycle[];
 }
+
+export interface CropQuery {
+  cropName?: string;      // e.g., "tomatoes"
+  radiusKm: number;       // e.g., 1000
+  startDate?: string;     // e.g., today
+  endDate?: string;       // e.g., today + 3 months
+  location?: { latitude: number; longitude: number }; // user current location
+}

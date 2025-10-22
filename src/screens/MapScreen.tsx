@@ -8,7 +8,7 @@ import { TopBar } from "../components/TopBar";
 import { useParcels } from "../store/useParcels";
 import { ParcelPeekCard } from "../components/ParcelPeekCard";
 import { CropTagSheet } from "../components/CropTagSheet";
-import { Parcel, CropCycle } from "../types";
+import { Parcel, CropCycle, CropQuery } from "../types";
 import { initDB, addCrop, getCrops, getCropsList, Crop, deleteCrop } from "../Database";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -25,7 +25,8 @@ import Animated, {
 } from "react-native-reanimated";
 import VoiceTranscriptionBox from "../components/VoiceTranscriptionBox";
 import VoiceRecorder from "../components/VoiceRecorder";
-
+import { OpenAI } from "openai";
+import { getCropCentroidFromBoundary, haversineDistance, reverseGeocode } from "../utils/geocode";
 
 export const MapScreen: React.FC = () => {
   const db = SQLite.openDatabaseSync("crops.db");
@@ -40,7 +41,8 @@ export const MapScreen: React.FC = () => {
   const router = useRouter();
   const [points, setPoints] = useState<LatLng[]>([]);
   const height = useSharedValue(0);
- 
+  const [currentUserLocation, setCurrentUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const [finalized, setFinalized] = useState(false);
   const [region, setRegion] = useState<Region>({
@@ -49,25 +51,16 @@ export const MapScreen: React.FC = () => {
     latitudeDelta: 0.0922,
     longitudeDelta: 0.0421,
   });
-  const COLORS = ["#FF5733", "#33FF57", "#3357FF", "#FFC300", "#8E44AD"];
   const [selectedCrp, setSelectedCrp] = useState<Crop | null>(null);
   const [highlightedPolygonId, setHighlightedPolygonId] = useState<number | null>(null);
   const { selectedCropFromSummaryPage } = useLocalSearchParams(); 
-  const [selectedLang, setSelectedLang] = useState(i18n.language);
   const [isLanguagePicker, setIsLanguagePicker] = useState(false);
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: height.value,
     transform: [{ scaleY: height.value }],
   }));
 
-  const [transcription, setTranscription] = useState<string | null>(null);
-
-  const handleLanguageChange = async (lang: string) => {
-    setSelectedLang(lang);
-    i18n.changeLanguage(lang);
-    // await AsyncStorage.setItem("appLanguage", lang);
-  };
-
+  const [transcription, setTranscription] = useState<string | "">("");
   const closeModal = () => setSelectedCrp(null);
 
   const handleZoom = (zoomIn: boolean) => {
@@ -116,25 +109,12 @@ export const MapScreen: React.FC = () => {
     setSheet(true); 
   };
 
-  async function handleAddCropHere() {
-    // Example: default center coordinates
-    const latitude = 12.9716;
-    const longitude = 77.5946;
-    await addCrop("Rice", "" + latitude + ":" + longitude, "2025-11-15", 250, "");
-    const rows = await getCropsList();
-    setCrops(rows);
-    setSheet(true);
-  }
-
   async function addCropWithLandBoundary(cropCycle: CropCycle) {
     console.log("addCropWithLandBoundary called...");
-    
-
     const cropName = cropCycle.cropType;
     const harvestDate = cropCycle.harvestDate;
     const quantity = cropCycle.expectedQty;
     if(points.length>2) {
-
       // randomly taking the first coordinates to pin
       const latitude = points[0].latitude;
       const longitude = points[0].longitude;
@@ -150,33 +130,6 @@ export const MapScreen: React.FC = () => {
       Alert.alert("Crop cannot be Tagged", `${cropName} boundary points not recorded`);  
     }
     
-  }
-
-  async function onLongPress(points: LatLng[]) {
-    const latitude = points[0].latitude;
-    const longitude = points[0].longitude;
-    
-    const p: Parcel = {
-      id: Math.random().toString(36).slice(2),
-      name: "New Parcel",
-      point: { latitude, longitude },
-      cycles: [],
-    };
-    addParcel(p);
-    // setSelected(p);
-    setSheet(true);
-
-    // For now, just using dummy values for crop
-    const cropName = "Wheat";
-    const harvestDate = "2025-12-01";
-    const quantity = 100;
-    const boundary = JSON.stringify(points);
-    await addCrop(cropName, "" + latitude + ":" + longitude, harvestDate, quantity, boundary);
-
-    const rows = await getCropsList();
-    setCrops(rows);
-
-    Alert.alert("Crop Tagged ✅", `${cropName} added at (${latitude}, ${longitude})`);
   }
 
   useEffect(() => {
@@ -195,6 +148,39 @@ export const MapScreen: React.FC = () => {
     })();
   }, [crops.length]);
 
+  useEffect(() => {
+    (async () => {
+      // Request permission
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setErrorMsg('Permission to access location was denied');
+        return;
+      }
+  
+      // Get current position
+      const currentLocation = await Location.getCurrentPositionAsync({});
+      setCurrentUserLocation({
+        latitude: currentLocation.coords.latitude,
+        longitude: currentLocation.coords.longitude,
+      });
+    })();
+  }, []);
+
+  useEffect(() => {
+    let isActive = true;
+
+    // async function definition and invokation - IIFE Immediately Invoked Function Expression.
+    (async () => {
+      console.log("use effect for transcription executed");
+      if (transcription && isActive) {
+        await renderCropQueryResults(transcription);
+      }
+    })();
+
+    return () => {
+      isActive = false; // cancel any pending work
+    };
+  }, [transcription]);
 
   const focusOnEarliestPolygon = (cropName: string) => {
     const filtered = crops.filter((c) => c.cropName === cropName);
@@ -244,8 +230,6 @@ export const MapScreen: React.FC = () => {
     mapRef.current?.animateCamera({ center: { latitude: lat, longitude: lon }, zoom: 14 }, { duration: 600 });
   }
 
-  
-
   function onSaveCycle(c: CropCycle) {
     console.log("onSave callback from cropsheet component invoked...");
     if (!selected) return;
@@ -253,20 +237,6 @@ export const MapScreen: React.FC = () => {
     addCropWithLandBoundary(c);
   }
 
-  function getPolygonCentroid(points: LatLng[]): LatLng {
-    let x = 0, y = 0;
-    for (const p of points) {
-      x += p.latitude;
-      y += p.longitude;
-    }
-    return {
-      latitude: x / points.length,
-      longitude: y / points.length
-    };
-  }
-
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  
   async function handleDelete() {
     const cropId = selectedCrp?.id;
     if(cropId) {
@@ -283,28 +253,107 @@ export const MapScreen: React.FC = () => {
     }
   }
 
-  const reverseGeocode = async (locationStr: string): Promise<string> => {
-    try {
-        const [lat, lng] = locationStr.split(":").map(s => parseFloat(s));
-        // const lat: number = 38.949551;
-        // const lng: number = -121.134732;
-        const res = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng});
-        if(res && res.length > 0) {
-            const place = res[0];
-            return `${place.subregion || place.city || place.region || "Unknown"}`;
-        }
-        return "Unknown";
-    } catch(e) {
-        console.warn("Reverse geocode failed: ", e);
-        return "Unknown";
-    }
-  };
-  
   const togglePicker = () => {
     const newValue = !isLanguagePicker;
     setIsLanguagePicker(newValue);
     height.value = withTiming(newValue ? 1 : 0, { duration: 300 });
   };
+
+  async function parseCropQuery(transcribedText: string, userLocation: {lat: number, lng: number}): Promise<CropQuery> {
+    
+    const prompt = `
+    Extract structured query parameters from the user request. Return JSON only.
+    User request: "${transcribedText}"
+
+    The JSON should have:
+    - cropName (string, optional)
+    - radiusKM (number, default 1000)
+    - startDate (YYYY-MM-DD, optional)
+    - endDate (YYYY-MM-DD, optional)
+    Use user location as: {"latitude": ${userLocation.lat}, "longitude": ${userLocation.lng}}
+    `;
+    
+    const response = await openAIClient.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }],
+    });
+
+    const rawText = response.choices[0].message?.content || "{}";
+
+    // 🧹 Clean up model output: remove markdown formatting & non-JSON text
+    const cleanedText = rawText
+      .replace(/```json\s*/g, "")  // remove ```json
+      .replace(/```/g, "")         // remove ```
+      .trim();
+    
+    try {
+      const cropQuery = JSON.parse(cleanedText) as CropQuery;
+      return cropQuery;
+    } catch (error) {
+      console.error("❌ Failed to parse JSON:", error, "\nRaw output:", rawText);
+      return {} as CropQuery;
+    }
+  }
+
+  function filterCropsByCropQuery(crops: Crop[], query: CropQuery) {
+    const cropsList = crops.filter(c => {
+      const {lat, lng} = getCropCentroidFromBoundary(c.boundary);
+      const distance = haversineDistance(
+        query.location!.latitude,
+        query.location!.longitude,
+        lat,
+        lng
+      );
+      const withinRadius = distance <= query.radiusKm;
+      const matchesName = query.cropName ? c.cropName.toLowerCase() === query.cropName.toLowerCase() : true;
+      const inDateRange = (!query.startDate || c.harvestDate >= query.startDate) &&
+                          (!query.endDate || c.harvestDate <= query.endDate);
+      return matchesName && (withinRadius || inDateRange);
+    });
+    return cropsList;
+  }
+
+  async function renderCropQueryResults(transcribedText: string) {
+    if(transcribedText) {
+      console.log("Transcription available");
+      
+      // fetch user's current location
+      const userLocation = currentUserLocation ? {lat: currentUserLocation.latitude, lng: currentUserLocation.longitude} : {lat: 13.004881, lng: 77.708927};
+
+      // parse transcription to crop query scheme
+      let cropQuery = await parseCropQuery(transcribedText, userLocation);
+      if(!cropQuery){
+        cropQuery = { radiusKm: 1000,
+          cropName: "rice",
+          startDate: "2025-01-01", // YYYY-MM-DD
+          endDate: "2025-12-31",
+          location: {latitude: 13.004834, longitude: 77.708848 },
+        };
+      }
+      
+      // filter crops by query
+      const filteredResults = filterCropsByCropQuery(crops, cropQuery);
+      const cropsStr = JSON.stringify(filteredResults);
+      // navigates to the crop query summary screen with the serialized results
+      router.push({
+        pathname: "/crop-query-results",
+        params: { cropsFromTranscribedFilter: cropsStr}
+      });
+      
+    }
+    console.log("Transcription not available. Returning dummy crop query");
+  }
+
+  async function handlePolygonSelection(crop: Crop) {
+    const reverseGeocodeLocation = await reverseGeocode(crop.location);
+    crop.locationName = reverseGeocodeLocation;
+    setSelectedCrp(crop);
+  }
+
+  function handleOnTranscription(transcribedText: string) {
+    setTranscription(transcribedText);
+    console.log("Transcription state updated with: ", transcribedText);
+  }
 
   return (
     <View style={styles.container}>
@@ -352,10 +401,13 @@ export const MapScreen: React.FC = () => {
             return null;
           }
 
+          function reverseGeocode(location: any) {
+            throw new Error("Function not implemented.");
+          }
+
           return (
-            <>
+            <React.Fragment key={crop.id}>
               <Polygon
-                key={crop.id}
                 coordinates={sortedPoints}
                 strokeColor={highlightedPolygonId === crop.id ? '#FFD700' : "black" }
                 strokeWidth={highlightedPolygonId === crop.id ? 3 : 1.5}
@@ -366,11 +418,7 @@ export const MapScreen: React.FC = () => {
                   // `${COLORS[index % COLORS.length]}55`
                 } // semi-transparent fill
                 tappable
-                onPress={async () => {
-                  const reverseGeocodeLocation = await reverseGeocode(crop.location);
-                  crop.locationName = reverseGeocodeLocation;
-                  setSelectedCrp(crop)
-                }} // <-- open modal on tap
+                onPress={async () => await handlePolygonSelection(crop)} // <-- open modal on tap
                 // onTouchStart={}
               />
               <Marker coordinate={centroid}>
@@ -383,7 +431,7 @@ export const MapScreen: React.FC = () => {
                   </React.Fragment>
                 </Callout>
             </Marker>
-          </>
+          </React.Fragment>
           );
         })}
       </MapView>
@@ -424,14 +472,17 @@ export const MapScreen: React.FC = () => {
         {isLanguagePicker && <LanguageSelector />}
       </Animated.View>
      
-      <VoiceTranscriptionBox 
+      {/* <VoiceTranscriptionBox 
         text={transcription}
-        onClose={() => setTranscription(null)}
-      />
+      /> */}
 
       {/* FABs */}
       <View style={styles.fabs}>
-        <VoiceRecorder onTranscription={setTranscription}/>
+        <VoiceRecorder onTranscription={(transcribedText) => {
+          handleOnTranscription(transcribedText);
+          // setTranscription(transcribedText); 
+          // console.log("transcribed text: ", transcribedText);
+        }}/>
         <Button title={t("clear")}onPress={handleClear} />
         <Button title={t("zoomIn")} onPress={() => handleZoom(true)} />
         <Button title={t("zoomOut")} onPress={() => handleZoom(false)} />

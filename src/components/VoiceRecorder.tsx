@@ -6,10 +6,6 @@ import OpenAI from "openai";
 // import { OPENAI_API_KEY } from "@env";
 // import Constants from "expo-constants";
 
-const apiKey =''
-const openAIClient = new OpenAI({
-    apiKey:''
-});
 
 interface VoiceRecorderProps {
     onTranscription: (text: string) => void;
@@ -52,22 +48,6 @@ export default function VoiceRecorder({ onTranscription }: VoiceRecorderProps) {
 
         setIsProcessingVoice(true);
         try{
-            // const audioFile = {
-            //     uri,                   // the local file URI from Expo Audio
-            //     name: "recording.m4a", // any filename
-            //     type: "audio/m4a",     // MIME type
-            // };
-            // const file = await fetch(uri);
-            // const blob = await file.blob();
-
-            // const transcription = await openAIClient.audio.transcriptions.create({
-            //     file: audioFile as any,
-            //     model: "gpt-4o-mini-transcribe"
-            // });
-
-            // const text = transcription.text || "";
-            // console.log("Transcription: ", text);
-
             const formData = new FormData();
             formData.append("file", {
             uri,
@@ -85,9 +65,8 @@ export default function VoiceRecorder({ onTranscription }: VoiceRecorderProps) {
             });
 
             const data = await res.json();
-            console.log("Transcription:", data.text);
-
             onTranscription(data.text);
+            // onTranscription("data.text");
         } catch(error) {
             console.error("Transcription failed: ", error);
         } finally {
