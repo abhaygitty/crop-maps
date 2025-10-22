@@ -1,20 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Button, View, StyleSheet, TouchableOpacity, Text, Platform, Alert, Modal } from "react-native";
-import { Picker } from "@react-native-picker/picker";
 import MapView, { Marker, PROVIDER_GOOGLE, Polygon, Region, LatLng, Callout } from "react-native-maps";
 import * as Location from "expo-location";
 import { TOKENS } from "../theme";
 import { TopBar } from "../components/TopBar";
 import { useParcels } from "../store/useParcels";
-import { ParcelPeekCard } from "../components/ParcelPeekCard";
 import { CropTagSheet } from "../components/CropTagSheet";
 import { Parcel, CropCycle, CropQuery } from "../types";
-import { initDB, addCrop, getCrops, getCropsList, Crop, deleteCrop } from "../Database";
-import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from "../../App";
+import { initDB, addCrop, getCropsList, Crop, deleteCrop } from "../Database";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import * as SQLite from "expo-sqlite";
 import { useTranslation } from "react-i18next";
 import LanguageSelector from "../components/LanguageSelector";
 import { Ionicons } from "@expo/vector-icons";
@@ -23,14 +17,20 @@ import Animated, {
   withTiming,
   useAnimatedStyle,
 } from "react-native-reanimated";
-import VoiceTranscriptionBox from "../components/VoiceTranscriptionBox";
 import VoiceRecorder from "../components/VoiceRecorder";
 import { OpenAI } from "openai";
 import { getCropCentroidFromBoundary, haversineDistance, reverseGeocode } from "../utils/geocode";
+import { translateToEnglish } from "../utils/translate-to-english";
+import { normalizeCropName } from "../utils/normalize";
+import { OPENAI_API_KEY } from "../utils/security/keys";
+
 
 export const MapScreen: React.FC = () => {
-  const db = SQLite.openDatabaseSync("crops.db");
-  
+
+  const openAIClient = new OpenAI({
+    apiKey: OPENAI_API_KEY,
+  });
+
   // states
   const mapRef = useRef<MapView | null>(null);
   const { t, i18n } = useTranslation();
@@ -320,8 +320,10 @@ export const MapScreen: React.FC = () => {
       // fetch user's current location
       const userLocation = currentUserLocation ? {lat: currentUserLocation.latitude, lng: currentUserLocation.longitude} : {lat: 13.004881, lng: 77.708927};
 
+      const { englishText, language } = await translateToEnglish(transcribedText);
+
       // parse transcription to crop query scheme
-      let cropQuery = await parseCropQuery(transcribedText, userLocation);
+      let cropQuery = await parseCropQuery(englishText, userLocation);
       if(!cropQuery){
         cropQuery = { radiusKm: 1000,
           cropName: "rice",
@@ -329,6 +331,12 @@ export const MapScreen: React.FC = () => {
           endDate: "2025-12-31",
           location: {latitude: 13.004834, longitude: 77.708848 },
         };
+      } else {
+        if(cropQuery.cropName) {
+          console.log("cropQuery before normalizing: ", cropQuery);
+          cropQuery.cropName = normalizeCropName(cropQuery.cropName);
+          console.log("cropQuery after normalizing: ", cropQuery);
+        }
       }
       
       // filter crops by query
