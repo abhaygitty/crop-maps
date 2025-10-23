@@ -1,8 +1,8 @@
-import { Crop } from "@/src/Database";
-import { Button, View, Text, FlatList, StyleSheet, ActivityIndicator, TextInput, ListRenderItem, TouchableOpacity, Alert } from "react-native";
+import { Crop } from "@/src/db/Database";
+import { View, Text, FlatList, StyleSheet, ListRenderItem, TouchableOpacity } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
-import React, { useState } from "react";
+import React from "react";
 import { router } from "expo-router";
 
 export default function CropQueryResultsScreen() {
@@ -36,34 +36,14 @@ export default function CropQueryResultsScreen() {
     );
 
     return (
-
         <View style={styles.container}>
-        <Text style={styles.title}>Filtered Crop Summary</Text>
-        
-
-        {/* {loading ? (
-            <ActivityIndicator size="large" />
-        ): ( */}
-        <FlatList<Crop>
-            data={parsedCrops}
-            keyExtractor={(item, index) => `${item.cropName}-${index}`}
-            renderItem={renderItem}
-        />
-        {/* )} */}
-        <Button title="View Crop Summary coming shortly...****" />  
-    </View>
-        // <FlatList
-        //     data={parsedCrops}
-        //     keyExtractor={c => c.id.toString()}
-        //     renderItem={({item}) => (
-        //         <View className="p-2 border-b border-gray-200">
-        //             <Text>{item.cropName}</Text>
-        //             <Text>Quantity: {item.quantity}</Text>
-        //             <Text>Harvest Date: {item.harvestDate}</Text>
-        //             <Text>Location: {item.location}</Text>
-        //         </View>
-        //     )}
-        // />
+            <Text style={styles.title}>Filtered Crop Summary</Text>
+            <FlatList<Crop>
+                data={parsedCrops}
+                keyExtractor={(item, index) => `${item.cropName}-${index}`}
+                renderItem={renderItem}
+            />
+        </View>
     );
 };
 

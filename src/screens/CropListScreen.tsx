@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, StyleSheet } from "react-native";
-import { Crop, getCrops, getCropsList } from "../Database";
+import { View, Text, FlatList, StyleSheet, TouchableOpacity } from "react-native";
+import { Crop, getCrops, getCropsList } from "../db/Database";
 import { ListRenderItem } from "react-native";
+import { enrichCropLocation } from "../utils/enrichCropLocation";
+import { router } from "expo-router";
 
 export default function CropListScreen() {
     const [crops, setCrops] = useState<Crop[]>([]);
@@ -15,21 +17,37 @@ export default function CropListScreen() {
         fetchData();
     }, []);
 
+  async function handleCropSelection(crop: Crop) {
+    await enrichCropLocation(crop);
+    router.push({
+      pathname: "/",
+      params: {selectedCropFromCropListPage: crop.id}
+    })
+  };
+
+
+
   // Explicitly type renderItem
   const renderItem: ListRenderItem<Crop> = ({ item }) => (
-    <View
-      style={{
-        marginBottom: 12,
-        padding: 12,
-        backgroundColor: "#fff",
-        borderRadius: 12,
+    <TouchableOpacity
+      onPress={() => {
+        handleCropSelection(item);
       }}
     >
-      <Text style={{ fontWeight: "600" }}>{item.cropName}</Text>
-      <Text>📍Location: {item.location}</Text>
-      <Text>📅 Harvest Date: {item.harvestDate}</Text>
-      <Text>🌾 Quantity: {item.quantity}</Text>
-    </View>
+      <View
+        style={{
+          marginBottom: 12,
+          padding: 12,
+          backgroundColor: "#fff",
+          borderRadius: 12,
+        }}
+      >
+        <Text style={{ fontWeight: "600" }}>{item.cropName}</Text>
+        <Text>📍Location: {item.locationName}</Text>
+        <Text>📅 Harvest Date: {item.harvestDate}</Text>
+        <Text>🌾 Quantity: {item.quantity}</Text>
+      </View>
+    </TouchableOpacity>
   );
     return (
         <>

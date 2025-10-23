@@ -1,0 +1,36 @@
+export interface TableSchema {
+    tableName: string;
+    columns: Record<string, string>; // column name -> SQL type
+}
+
+export const cropSchema = {
+    tableName: "crops",
+    columns: {
+        id: "INTEGER PRIMARY KEY AUTOINCREMENT",
+        cropName: "TEXT",
+        location: "TEXT",
+        harvestDate: "TEXT",
+        quantity: "INTEGER",
+        boundary: "TEXT",
+        locationName: "TEXT",
+    },
+};
+
+export const userSchema: TableSchema = {
+    tableName: "users",
+    columns: {
+      id: "INTEGER PRIMARY KEY AUTOINCREMENT",
+      name: "TEXT",
+      email: "TEXT",
+    },
+  };
+  
+export const weatherSchema: TableSchema = {
+tableName: "weather",
+columns: {
+    id: "INTEGER PRIMARY KEY AUTOINCREMENT",
+    cropId: "INTEGER",
+    forecastDate: "TEXT",
+    temperature: "REAL",
+},
+};

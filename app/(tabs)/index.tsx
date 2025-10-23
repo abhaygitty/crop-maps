@@ -1,21 +1,18 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+import { StyleSheet } from 'react-native';
 import { SafeAreaView, StatusBar } from "react-native";
 import { MapScreen } from "../../src/screens/MapScreen";
 import React, { useEffect, useState } from "react";
-import { View, Text, Button, FlatList } from "react-native";
-import { initDB, addCrop, getCrops, getCropsList } from "../../src/Database";
+import { initDB, addCrop, getCrops, getCropsList } from "../../src/db/Database";
+import { ensureAllTables } from '@/src/db/migration';
+import { cropSchema, userSchema, weatherSchema } from '@/src/db/schema';
 
 export default function HomeScreen() {
   const [crops, setCrops] = useState<any[]>([]);
 
   useEffect(() => {
     (async () => {
+      await ensureAllTables([cropSchema, userSchema, weatherSchema]);
+      console.log("All DB tables ensured");
       await initDB();
       const rows = await getCropsList();
       setCrops(rows);
@@ -23,30 +20,16 @@ export default function HomeScreen() {
   }, []);
 
   async function handleAddCrop() {
-    await addCrop("Wheat", "12.9716,77.5946", "2025-11-30", 200, "");
+    await addCrop("Wheat", "12.9716,77.5946", "2025-11-30", 200, "", "");
     const rows = await getCrops();
     setCrops(rows);
   }
 
   return (
-    <>
-        <SafeAreaView style={{ flex: 1 }}>
-            <StatusBar barStyle="dark-content" />
-            <MapScreen />
-        </SafeAreaView>
-        {/* <View style={{ flex: 1, marginTop: 20, padding: 20 }}>
-        <Button title="Add Sample Crop" onPress={handleAddCrop} />
-        <FlatList
-            data={crops}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item }) => (
-            <Text>
-                🌱 {item.cropName} at {item.location} → {item.quantity} units by {item.harvestDate}
-            </Text>
-            )}
-        />
-        </View>  */}
-    </>
+    <SafeAreaView style={{ flex: 1 }}>
+        <StatusBar barStyle="dark-content" />
+        <MapScreen />
+    </SafeAreaView>
   );
 }
 

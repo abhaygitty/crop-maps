@@ -7,7 +7,7 @@ import { TopBar } from "../components/TopBar";
 import { useParcels } from "../store/useParcels";
 import { CropTagSheet } from "../components/CropTagSheet";
 import { Parcel, CropCycle, CropQuery } from "../types";
-import { initDB, addCrop, getCropsList, Crop, deleteCrop } from "../Database";
+import { initDB, addCrop, getCropsList, Crop, deleteCrop, migrateDB } from "../db/Database";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import LanguageSelector from "../components/LanguageSelector";
@@ -37,7 +37,7 @@ export const MapScreen: React.FC = () => {
   const { parcels, addParcel, addOrUpdateCycle, getStatusForParcel } = useParcels();
   const [selected, setSelected] = useState<Parcel | null>(null);
   const [sheet, setSheet] = useState(false);
-  const [crops, setCrops] = useState<any[]>([]);
+  const [crops, setCrops] = useState<Crop[]>([]);
   const router = useRouter();
   const [points, setPoints] = useState<LatLng[]>([]);
   const height = useSharedValue(0);
@@ -54,6 +54,7 @@ export const MapScreen: React.FC = () => {
   const [selectedCrp, setSelectedCrp] = useState<Crop | null>(null);
   const [highlightedPolygonId, setHighlightedPolygonId] = useState<number | null>(null);
   const { selectedCropFromSummaryPage } = useLocalSearchParams(); 
+  const { selectedCropFromCropListPage } = useLocalSearchParams(); 
   const [isLanguagePicker, setIsLanguagePicker] = useState(false);
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: height.value,
@@ -120,7 +121,12 @@ export const MapScreen: React.FC = () => {
       const longitude = points[0].longitude;
       
       const boundary = JSON.stringify(points);
-      await addCrop(cropName, "" + latitude + ":" + longitude, harvestDate, quantity, boundary);
+      const locationName = await reverseGeocode(`${latitude}:${longitude}`);
+      try {
+        await addCrop(cropName, "" + latitude + ":" + longitude, harvestDate, quantity, boundary, locationName);
+      } catch(error) {
+        console.error("DB error occured while inserting record into crops DB", error);
+      }
 
       const rows = await getCropsList();
       setCrops(rows);
@@ -138,7 +144,7 @@ export const MapScreen: React.FC = () => {
       if (status !== "granted") return;
       const loc = await Location.getCurrentPositionAsync({});
       flyTo(loc.coords.latitude, loc.coords.longitude);
-
+      await migrateDB();
       await initDB();
       const rows = await getCropsList();
       setCrops(rows);
@@ -147,6 +153,17 @@ export const MapScreen: React.FC = () => {
       }
     })();
   }, [crops.length]);
+
+  useEffect(() => {
+    if(selectedCropFromCropListPage){
+      try{
+        const cropId = Number(selectedCropFromCropListPage);
+        focusOnSelectedCropPolygon(cropId);
+      } catch(e) {
+        console.error("Could not parse string to Number", e);
+      }
+    }
+  }, [selectedCropFromCropListPage]);
 
   useEffect(() => {
     (async () => {
@@ -181,6 +198,44 @@ export const MapScreen: React.FC = () => {
       isActive = false; // cancel any pending work
     };
   }, [transcription]);
+
+  const focusOnSelectedCropPolygon = (cropId: number) => {
+    const filteredCropById = crops.filter((c) => c.id === cropId);
+    if(filteredCropById.length > 0 && filteredCropById[0]) {
+      const crp = filteredCropById[0];
+      try {
+        const boundaryData = 
+          typeof crp.boundary === 'string'
+          ? JSON.parse(crp.boundary)
+          : crp.boundary;
+        
+          if(Array.isArray(boundaryData) && boundaryData.length > 0) {
+            const latSum = boundaryData.reduce((sum, p) => sum + p.latitude, 0);
+            const longSum = boundaryData.reduce((sum, p) => sum + p.longitude, 0);
+            const center = {
+              latitude: latSum / boundaryData.length,
+              longitude: longSum / boundaryData.length,
+            };
+  
+            setHighlightedPolygonId(crp.id);
+            mapRef.current?.fitToCoordinates(boundaryData, {
+              edgePadding: {
+                top: 100,
+                right: 100,
+                bottom: 100,
+                left: 100
+              },
+              animated: true
+            });
+          } else {
+            console.warn("No valid boundary points found for crop: ", crp.cropName);
+          }
+  
+      } catch(error) {
+        console.warn("No valid boundary points found for crop: ", crp.cropName);
+      }
+    }
+  };
 
   const focusOnEarliestPolygon = (cropName: string) => {
     const filtered = crops.filter((c) => c.cropName === cropName);

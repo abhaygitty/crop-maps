@@ -1,0 +1,94 @@
+// src/Database.ts
+import * as SQLite from "expo-sqlite";
+
+const db = SQLite.openDatabaseSync("crops.db");
+
+export interface Crop {
+  id: number;
+  cropName: string;
+  harvestDate: string;
+  quantity: number;
+  location: string;
+  boundary?: string;
+  locationName?: string;
+}
+
+export async function resetDB() {
+  console.log("Resetting crops table...");
+  await db.execAsync(`
+    DROP TABLE IF EXISTS crops;
+  `);
+  await initDB();
+}
+
+export async function migrateDB() {
+  console.log("db migrate executed");
+  const existingColumns = await db.getAllAsync(
+    `PRAGMA table_info(crops);`
+  );
+  
+  const hasLocationNameColumn = existingColumns.some((col: any) => col.name === "locationName");
+  console.log(hasLocationNameColumn);
+  if(!hasLocationNameColumn) {
+    console.log("Adding new column: locationName");
+    await db.execAsync(`ALTER TABLE crops ADD COLUMN locationName TEXT;`);
+  }
+}
+
+
+export async function initDB() {
+  console.log("db init executed");
+
+  await db.execAsync(`
+    CREATE TABLE IF NOT EXISTS crops (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      cropName TEXT,
+      location TEXT,
+      harvestDate TEXT,
+      quantity INTEGER,
+      boundary TEXT,
+      locationName TEXT
+    );
+  `);
+}
+
+export async function addCrop(cropName: string, location: string, harvestDate: string, quantity: number, boundary: string, locationName: string) {
+  await db.runAsync(
+    `INSERT INTO crops (cropName, location, harvestDate, quantity, boundary, locationName) VALUES (?, ?, ?, ?, ?, ?)`,
+    [cropName, location, harvestDate, quantity, boundary, locationName]
+  );
+}
+
+export async function deleteCrop(cropId: number) {
+  const result = await db.runAsync(
+    `DELETE FROM crops WHERE id = ?;`, {cropId}
+  );
+  console.log(result);
+}
+
+export async function getCrops() {
+  return await db.getAllAsync("SELECT * FROM crops");
+}
+
+export async function getCropsList(): Promise<Crop[]> {
+  const rows = await db.getAllAsync<any>(`SELECT * FROM crops`);
+
+  return rows.map((row) => ({
+    id: row.id,
+    cropName: row.cropName,
+    location: row.location,
+    harvestDate: row.harvestDate,
+    quantity: row.quantity,
+    boundary: row.boundary,
+    locationName: row?.locationName,
+  })) as Crop[];
+}
+
+export async function updateCropLocationName(cropId: number, locationName: string) {
+  try {
+    await db.runAsync(`UPDATE crops SET locationName = ? WHERE id = ?`, [locationName, cropId]);
+    console.log(`Updated crop ${cropId} with locationName: ${locationName}`);
+  } catch(error) {
+    console.error("Failed to update locationName", error);
+  }
+}

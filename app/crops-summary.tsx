@@ -1,6 +1,6 @@
 import { Button, View, Text, FlatList, StyleSheet, ActivityIndicator, TextInput, ListRenderItem, TouchableOpacity, Alert } from "react-native";
 import React, { useEffect, useState } from "react";
-import { Crop, getCropsList } from "../src/Database";
+import { Crop, getCropsList } from "../src/db/Database";
 import * as SQLite from "expo-sqlite";
 import * as Location from "expo-location";
 import { router } from "expo-router";
