@@ -40,6 +40,27 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="contracts/create-contract"
+        options={{
+          title: 'Contract',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="0.circle.fill" color={color} />
+        }}
+      />
+      <Tabs.Screen
+        name="contracts/contract-review"
+        options={{
+          title: 'Review',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="0.circle.hi" color={color} />
+        }}
+      />
+      <Tabs.Screen
+        name="contracts/matches"
+        options={{
+          title: 'Matches',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="0.square.fill" color={color} />
+        }}
+      />
     </Tabs>
   );
 }

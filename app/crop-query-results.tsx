@@ -16,7 +16,7 @@ export default function CropQueryResultsScreen() {
     const { t } = useTranslation();
 
     const renderItem: ListRenderItem<Crop> = ({ item }) => (
-        <TouchableOpacity
+        <TouchableOpacity style={[styles.card, styles.cardSelected]}
             onPress={() => {
                 // Alert.alert("crop selected on summary page");
                 router.push({
@@ -58,14 +58,7 @@ const styles = StyleSheet.create({
       borderRadius: 8,
       marginBottom: 12,
     },
-    card: {
-      padding: 12,
-      backgroundColor: "#f9f9f9",
-      borderRadius: 10,
-      marginBottom: 10,
-      shadowColor: "#000",
-      shadowOpacity: 0.1,
-      shadowRadius: 3,
-    },
+    card: { backgroundColor: '#fff', padding: 12, borderRadius: 10, marginBottom: 10 },
+    cardSelected: { borderWidth: 2, borderColor: '#1DB954' },
     crop: { fontSize: 18, fontWeight: "600", marginBottom: 4 },
 });

@@ -4,9 +4,11 @@ import { Crop, getCrops, getCropsList } from "../db/Database";
 import { ListRenderItem } from "react-native";
 import { enrichCropLocation } from "../utils/enrichCropLocation";
 import { router } from "expo-router";
+import { useTranslation } from "react-i18next";
 
 export default function CropListScreen() {
     const [crops, setCrops] = useState<Crop[]>([]);
+    const { t } = useTranslation();
 
     useEffect(() => {
         async function fetchData() {
@@ -42,10 +44,10 @@ export default function CropListScreen() {
           borderRadius: 12,
         }}
       >
-        <Text style={{ fontWeight: "600" }}>{item.cropName}</Text>
-        <Text>📍Location: {item.locationName}</Text>
-        <Text>📅 Harvest Date: {item.harvestDate}</Text>
-        <Text>🌾 Quantity: {item.quantity}</Text>
+        <Text style={{ fontWeight: "600" }}>{t("cropName")}: {item.cropName}</Text>
+        <Text>📍{t("location")}: {item.locationName}</Text>
+        <Text>📅 {t("harvestDate")}: {item.harvestDate}</Text>
+        <Text>🌾 {t("quantity")}: {item.quantity}</Text>
       </View>
     </TouchableOpacity>
   );
