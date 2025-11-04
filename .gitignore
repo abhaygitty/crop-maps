@@ -39,3 +39,7 @@ yarn-error.*
 *.tsbuildinfo
 
 app-example
+
+# ios and android files can be ignored from being committed.
+ios/
+android/

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, Modal, StyleSheet, TextInput, TouchableOpacity, Platform } from "react-native";
+import { View, Text, Modal, StyleSheet, TextInput, TouchableOpacity, Platform, TouchableWithoutFeedback, Keyboard, KeyboardAvoidingView } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { TOKENS } from "../theme";
 import { Unit, CropCycle } from "../types";
@@ -32,55 +32,66 @@ export const CropTagSheet: React.FC<Props> = ({ visible, onClose, onSave, defaul
   }
 
   return (
+    
     <Modal visible={visible} animationType="slide" transparent>
-      <View style={styles.overlay}>
-        <View style={styles.sheet}>
-          <Text style={styles.title}>Tag Crop</Text>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          style={{ flex: 1, justifyContent: "center", padding: 4 }}
+        >
+          <View style={styles.overlay}>
+            <View style={styles.sheet}>
+              <Text style={styles.title}>Tag Crop</Text>
 
-          <Text style={styles.label}>Crop</Text>
-          <TextInput style={styles.input} value={crop} onChangeText={setCrop} />
+              <Text style={styles.label}>Crop</Text>
+              <TextInput style={styles.input} value={crop} onChangeText={setCrop} />
 
-          <Text style={styles.label}>Harvest Date</Text>
-          {Platform.OS !== "ios" && (
-            <TouchableOpacity onPress={() => setShowPicker(true)} style={styles.selectBtn}>
-              <Text style={{ color: TOKENS.text }}>{date.toDateString()}</Text>
-            </TouchableOpacity>
-          )}
-          {showPicker && (
-            <DateTimePicker
-              value={date}
-              mode="date"
-              onChange={(_, d) => {
-                if (d) setDate(d);
-                if (Platform.OS !== "ios") setShowPicker(false);
-              }}
-            />
-          )}
-
-          <Text style={styles.label}>Expected Quantity</Text>
-          <View style={{ flexDirection: "row", gap: 8 }}>
-            <TextInput
-              style={[styles.input, { flex: 1 }]}
-              value={qty}
-              onChangeText={setQty}
-              keyboardType="decimal-pad"
-            />
-            <TouchableOpacity style={styles.unitBtn} onPress={() => setUnit(unit === "ton" ? "kg" : unit === "kg" ? "bags" : "ton")}>
-              <Text style={{ color: "#fff", fontWeight: "600" }}>{unit}</Text>
-            </TouchableOpacity>
+              <Text style={styles.label}>Harvest Date</Text>
+              {Platform.OS !== "ios" && (
+                <TouchableOpacity onPress={() => setShowPicker(true)} style={styles.selectBtn}>
+                  <Text style={{ color: TOKENS.text }}>{date.toDateString()}</Text>
+                </TouchableOpacity>
+              )}
+              {showPicker && (
+                <DateTimePicker
+                  value={date}
+                  mode="date"
+                  onChange={(_, d) => {
+                    if (d) setDate(d);
+                    if (Platform.OS !== "ios") setShowPicker(false);
+                  }}
+                />
+              )}
+            
+                  <Text style={styles.label}>Expected Quantity</Text>
+                  <View style={{ flexDirection: "row", gap: 8 }}>
+                    <TextInput
+                      style={[styles.input, { flex: 1 }]}
+                      value={qty}
+                      onChangeText={setQty}
+                      keyboardType="decimal-pad"
+                    />
+                    <TouchableOpacity style={styles.unitBtn} onPress={() => setUnit(unit === "ton" ? "kg" : unit === "kg" ? "bags" : "ton")}>
+                      <Text style={{ color: "#fff", fontWeight: "600" }}>{unit}</Text>
+                    </TouchableOpacity>
+                  </View>
+                
+                  <View style={styles.row}>
+                    <TouchableOpacity onPress={onClose} style={[styles.cta, { backgroundColor: TOKENS.neutral }]}>
+                      <Text style={[styles.ctaText, { color: TOKENS.text }]}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={handleSave} style={[styles.cta, { backgroundColor: TOKENS.primary }]}>
+                      <Text style={styles.ctaText}>Save</Text>
+                    </TouchableOpacity>
+                  </View>
+            
+            </View>
           </View>
-
-          <View style={styles.row}>
-            <TouchableOpacity onPress={onClose} style={[styles.cta, { backgroundColor: TOKENS.neutral }]}>
-              <Text style={[styles.ctaText, { color: TOKENS.text }]}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleSave} style={[styles.cta, { backgroundColor: TOKENS.primary }]}>
-              <Text style={styles.ctaText}>Save</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
+        </KeyboardAvoidingView>      
+      </TouchableWithoutFeedback>
     </Modal>
+      
+    
   );
 };
 

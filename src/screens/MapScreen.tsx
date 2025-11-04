@@ -110,6 +110,13 @@ export const MapScreen: React.FC = () => {
     setSheet(true); 
   };
 
+  const handleCancelFinalize = () => {
+    if(points && points.length > 2) {
+      setFinalized(false);
+      setSheet(false);
+    }
+  };
+
   async function addCropWithLandBoundary(cropCycle: CropCycle) {
     console.log("addCropWithLandBoundary called...");
     const cropName = cropCycle.cropType;
@@ -130,7 +137,7 @@ export const MapScreen: React.FC = () => {
 
       const rows = await getCropsList();
       setCrops(rows);
-
+      handleClear();
       Alert.alert("Crop Tagged ✅", `${cropName} added at (${latitude}, ${longitude})`);  
     } else {
       Alert.alert("Crop cannot be Tagged", `${cropName} boundary points not recorded`);  
@@ -553,7 +560,7 @@ export const MapScreen: React.FC = () => {
         <Button title={t("cropsSummary")} onPress={() => {router.push("/crops-summary")}}/>
       </View>
       
-      <CropTagSheet visible={sheet} onClose={() => setSheet(false)} onSave={onSaveCycle} />
+      <CropTagSheet visible={sheet} onClose={handleCancelFinalize} onSave={onSaveCycle} />
         
     </View>
   );
