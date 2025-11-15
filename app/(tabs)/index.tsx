@@ -2,33 +2,36 @@ import { StyleSheet } from 'react-native';
 import { SafeAreaView, StatusBar } from "react-native";
 import { MapScreen } from "../../src/screens/MapScreen";
 import React, { useEffect, useState } from "react";
-import { initDB, addCrop, getCrops, getCropsList } from "../../src/db/Database";
+import { getCropsList } from "../../src/db/Database";
 import { ensureAllTables } from '@/src/db/migration';
 import { cropSchema, userSchema, weatherSchema } from '@/src/db/schema';
+import { useDatabaseLifecycle } from '@/src/db/db-backup-restore';
+import { AuthProvider } from '@/src/context/AuthContext';
+import LoginScreen from '../login';
+import { ProtectedRoute } from '@/src/components/ProtectedRoute';
 
 export default function HomeScreen() {
   const [crops, setCrops] = useState<any[]>([]);
 
   useEffect(() => {
     (async () => {
-      await ensureAllTables([cropSchema, userSchema, weatherSchema]);
+      // await ensureAllTables([cropSchema, userSchema, weatherSchema]);
+      await useDatabaseLifecycle();
       console.log("All DB tables ensured");
-      await initDB();
+      // await initDB();
       const rows = await getCropsList();
       setCrops(rows);
     })();
   }, []);
 
-  async function handleAddCrop() {
-    await addCrop("Wheat", "12.9716,77.5946", "2025-11-30", 200, "", "");
-    const rows = await getCrops();
-    setCrops(rows);
-  }
-
   return (
     <SafeAreaView style={{ flex: 1 }}>
         <StatusBar barStyle="dark-content" />
-        <MapScreen />
+        {/* <AuthProvider> */}
+          {/* <ProtectedRoute> */}
+            <MapScreen /> 
+          {/* </ProtectedRoute> */}
+        {/* </AuthProvider>         */}
     </SafeAreaView>
   );
 }

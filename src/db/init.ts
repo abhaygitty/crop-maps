@@ -1,7 +1,8 @@
 import * as SQLite from "expo-sqlite";
 import { cropSchema } from "./schema";
+import { openDatabase } from "./db-backup-restore";
 
-const db = SQLite.openDatabaseSync("crops.db");
+const db = openDatabase();
 
 export async function ensureTable() {
     console.log("Ensuring crops table schema...");

@@ -2,8 +2,9 @@
 // Create and persist contract data. Wire this to your SQLite DB.
 
 import * as SQLite from 'expo-sqlite';
+import { openDatabase } from '../db/db-backup-restore';
 // TODO: replace this with your existing db wrapper (db.runAsync etc.)
-const db = SQLite.openDatabaseSync('app.db');
+const db = openDatabase();
 
 export async function createContract(contract: any) {
   // You should create a contracts table with fields to store JSON payload and metadata.

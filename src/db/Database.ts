@@ -1,7 +1,10 @@
 // src/Database.ts
-import * as SQLite from "expo-sqlite";
+// import * as SQLite from "expo-sqlite";
+import { openDatabase, runQueryWithAutoBackup } from "./db-backup-restore";
 
-const db = SQLite.openDatabaseSync("crops.db");
+// const db = SQLite.openDatabaseSync("crops.db");
+// await restoreDatabase();
+const db = openDatabase();
 
 export interface Crop {
   id: number;
@@ -36,7 +39,7 @@ export async function migrateDB() {
 }
 
 
-export async function initDB() {
+async function initDB() {
   console.log("db init executed");
 
   await db.execAsync(`
@@ -53,17 +56,28 @@ export async function initDB() {
 }
 
 export async function addCrop(cropName: string, location: string, harvestDate: string, quantity: number, boundary: string, locationName: string) {
-  await db.runAsync(
+  await runQueryWithAutoBackup(
+    db,
     `INSERT INTO crops (cropName, location, harvestDate, quantity, boundary, locationName) VALUES (?, ?, ?, ?, ?, ?)`,
     [cropName, location, harvestDate, quantity, boundary, locationName]
   );
+
+  // await db.runAsync(
+  //   `INSERT INTO crops (cropName, location, harvestDate, quantity, boundary, locationName) VALUES (?, ?, ?, ?, ?, ?)`,
+  //   [cropName, location, harvestDate, quantity, boundary, locationName]
+  // );
 }
 
 export async function deleteCrop(cropId: number) {
-  const result = await db.runAsync(
-    `DELETE FROM crops WHERE id = ?;`, {cropId}
+  const result = await runQueryWithAutoBackup(
+    db,
+    `DELETE FROM crops WHERE id = ?;`, [cropId]
   );
   console.log(result);
+}
+
+export async function getAllUsers() {
+  return await db.getAllAsync("select * from users");
 }
 
 export async function getCrops() {
@@ -86,7 +100,7 @@ export async function getCropsList(): Promise<Crop[]> {
 
 export async function updateCropLocationName(cropId: number, locationName: string) {
   try {
-    await db.runAsync(`UPDATE crops SET locationName = ? WHERE id = ?`, [locationName, cropId]);
+    await runQueryWithAutoBackup(db,`UPDATE crops SET locationName = ? WHERE id = ?`, [locationName, cropId]);
     console.log(`Updated crop ${cropId} with locationName: ${locationName}`);
   } catch(error) {
     console.error("Failed to update locationName", error);

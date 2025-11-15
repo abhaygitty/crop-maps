@@ -1,10 +1,11 @@
 import { Button, View, Text, FlatList, StyleSheet, ActivityIndicator, TextInput, ListRenderItem, TouchableOpacity, Alert } from "react-native";
 import React, { useEffect, useState } from "react";
-import { Crop, getCropsList } from "../src/db/Database";
+import { Crop, getAllUsers, getCropsList } from "../src/db/Database";
 import * as SQLite from "expo-sqlite";
 import * as Location from "expo-location";
 import { router } from "expo-router";
 import { useTranslation } from "react-i18next";
+import { openDatabase } from "@/src/db/db-backup-restore";
 
 interface CropSummary {
     cropName: string;
@@ -14,7 +15,7 @@ interface CropSummary {
     avgYieldNearby: number;
 }
 
-const db = SQLite.openDatabaseSync("crops.db");
+const db = openDatabase();
 
 const CropSummaryScreen = () => {
     const [summaries, setSummaries] = useState<CropSummary[]>([]);
@@ -25,6 +26,15 @@ const CropSummaryScreen = () => {
     useEffect(() => {
         loadCropSummary();
     }, []);
+
+    const loadUsers = async () => {
+        try {
+            const users = await getAllUsers();
+            console.log(users);
+        } catch(error) {
+            console.log("error fetching users: ", error);
+        }
+    };
 
     const loadCropSummary = async () => {
         setLoading(true);

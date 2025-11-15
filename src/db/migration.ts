@@ -1,7 +1,8 @@
 import * as SQLite from "expo-sqlite";
 import type { TableSchema } from "./schema";
+import { openDatabase } from "./db-backup-restore";
 
-const db = SQLite.openDatabaseSync("crops.db");
+const db = openDatabase();
 
 export async function ensureAllTables(schemas: TableSchema[]) {
     for(const schema of schemas) {

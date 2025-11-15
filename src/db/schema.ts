@@ -22,15 +22,18 @@ export const userSchema: TableSchema = {
       id: "INTEGER PRIMARY KEY AUTOINCREMENT",
       name: "TEXT",
       email: "TEXT",
+      passwordHash: "TEXT",
+      role: "TEXT CHECK(role IN ('farmer', 'buyer', 'admin')) NOT NULL",
+      createdAt: "TEXT DEFAULT CURRENT_TIMESTAMP"
     },
   };
   
 export const weatherSchema: TableSchema = {
-tableName: "weather",
-columns: {
-    id: "INTEGER PRIMARY KEY AUTOINCREMENT",
-    cropId: "INTEGER",
-    forecastDate: "TEXT",
-    temperature: "REAL",
-},
+    tableName: "weather",
+    columns: {
+        id: "INTEGER PRIMARY KEY AUTOINCREMENT",
+        cropId: "INTEGER",
+        forecastDate: "TEXT",
+        temperature: "REAL",
+    },
 };

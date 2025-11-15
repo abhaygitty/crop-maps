@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { SafeAreaView, StatusBar } from "react-native";
 import { MapScreen } from "./src/screens/MapScreen";
-import { addCrop, getCrops, getCropsList, initDB } from "./src/db/Database";
+import { addCrop, getCrops, getCropsList } from "./src/db/Database";
 import { Platform, StyleSheet } from 'react-native';
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { NavigationContainer } from "@react-navigation/native";
@@ -20,7 +20,7 @@ export default function App() {
 
   useEffect(() => {
     (async () => {
-      await initDB();
+      // await initDB();
       const rows = await getCropsList();
       setCrops(rows);
     })();
@@ -33,18 +33,19 @@ export default function App() {
   }
 
   return (
-    <>
-      <NavigationContainer>
-        <Stack.Navigator>
-          <Stack.Screen name="Map" component={MapScreen} options={{ title: "Crop Map" }}/>
-          <Stack.Screen name="CropList" component={CropListScreen} options={{ title: "My Crops" }}/>
-        </Stack.Navigator>
-      </NavigationContainer>
-      <SafeAreaView style={{ flex: 1 }}>
-         <StatusBar barStyle="dark-content" />
-         <MapScreen />
-       </SafeAreaView>
-    </>
+    // <>
+    //   <NavigationContainer>
+    //     <Stack.Navigator>
+    //       {/* <Stack.Screen name="Map" component={MapScreen} options={{ title: "Crop Map" }}/> */}
+    //       <Stack.Screen name="CropList" component={CropListScreen} options={{ title: "My Crops" }}/>
+    //     </Stack.Navigator>
+    //   </NavigationContainer>
+    //   <SafeAreaView style={{ flex: 1 }}>
+    //      <StatusBar barStyle="dark-content" />
+    //      {/* <MapScreen /> */}
+    //    </SafeAreaView>
+    // </>
+    <></>
   );
 }
 

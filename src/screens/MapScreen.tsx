@@ -7,7 +7,7 @@ import { TopBar } from "../components/TopBar";
 import { useParcels } from "../store/useParcels";
 import { CropTagSheet } from "../components/CropTagSheet";
 import { Parcel, CropCycle, CropQuery } from "../types";
-import { initDB, addCrop, getCropsList, Crop, deleteCrop, migrateDB } from "../db/Database";
+import { addCrop, getCropsList, Crop, deleteCrop, migrateDB } from "../db/Database";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import LanguageSelector from "../components/LanguageSelector";
@@ -23,6 +23,8 @@ import { getCropCentroidFromBoundary, haversineDistance, reverseGeocode } from "
 import { translateToEnglish } from "../utils/translate-to-english";
 import { normalizeCropName } from "../utils/normalize";
 import { OPENAI_API_KEY } from "../utils/security/keys";
+import { logoutUser } from "../services/authService";
+import { useAuth } from "../context/AuthContext";
 
 
 export const MapScreen: React.FC = () => {
@@ -30,7 +32,7 @@ export const MapScreen: React.FC = () => {
   const openAIClient = new OpenAI({
     apiKey: OPENAI_API_KEY,
   });
-
+  const { logout } = useAuth();
   // states
   const mapRef = useRef<MapView | null>(null);
   const { t, i18n } = useTranslation();
@@ -84,6 +86,10 @@ export const MapScreen: React.FC = () => {
   const handleClear = () => {
     setPoints([]);
     setFinalized(false);
+  };
+
+  const handleLogoutUser = async () => {
+    await logout();
   };
 
   const handleFinalize = () => {
@@ -145,14 +151,15 @@ export const MapScreen: React.FC = () => {
     
   }
 
+
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") return;
       const loc = await Location.getCurrentPositionAsync({});
       flyTo(loc.coords.latitude, loc.coords.longitude);
-      await migrateDB();
-      await initDB();
+      // await migrateDB();
+      // await initDB();
       const rows = await getCropsList();
       setCrops(rows);
       if(selectedCropFromSummaryPage) {
@@ -534,6 +541,7 @@ export const MapScreen: React.FC = () => {
         </View>
       </Modal>
       <TopBar onFlyTo={flyTo} />
+      <Button title="Logout" onPress={handleLogoutUser}/>
       <TouchableOpacity style={styles.toggleButton} onPress={togglePicker}>
         <Ionicons name="language" size={22} color="#fff" />
       </TouchableOpacity>

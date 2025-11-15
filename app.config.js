@@ -20,6 +20,7 @@ export default {
             "eas": {
                 "projectId": "4e7ed654-0073-478d-8200-3195a17f28a5"
             },
+            secretKey: process.env.SECRET_KEY,
         },
     },
 };

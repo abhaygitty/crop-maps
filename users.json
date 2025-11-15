@@ -1,0 +1,50 @@
+[
+    {
+        "createdAt": "2025-11-11 15:18:16",
+        "email": "abhay121191@gmail.com",
+        "id": 1,
+        "name": "Abhay",
+        "passwordHash": "Reset@123",
+        "role": "farmer"
+    },
+    {
+        "createdAt": "2025-11-11 15:22:31",
+        "email": "user1@gmail.com",
+        "id": 2,
+        "name": "User1",
+        "passwordHash": "user1",
+        "role": "farmer"
+    },
+    {
+        "createdAt": "2025-11-11 17:59:04",
+        "email": "u2@g.com",
+        "id": 3,
+        "name": "U2",
+        "passwordHash": "u2",
+        "role": "farmer"
+    },
+    {
+        "createdAt": "2025-11-11 18:01:08",
+        "email": "div@g.com",
+        "id": 4,
+        "name": "Divyani",
+        "passwordHash": "divyani",
+        "role": "farmer"
+    },
+    {
+        "createdAt": "2025-11-13 14:27:06",
+        "email": "abhay@gmail.com",
+        "id": 5,
+        "name": "Abhay1 Nagaraj B R",
+        "passwordHash": "Reset@123",
+        "role": "farmer"
+    },
+    {
+        "createdAt": "2025-11-13 14:38:42",
+        "email": "abhay2@gmail.com",
+        "id": 6,
+        "name": "Abhay2",
+        "passwordHash": "Reset@123",
+        "role": "farmer"
+    }
+]
