@@ -2,7 +2,7 @@ import React,  { useState } from "react";
 import { Audio } from "expo-av";
 import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 import { Mic, Square, X } from "lucide-react-native"; 
-import { OPENAI_API_KEY } from "../utils/security/keys";
+import { OPENAI_API_KEY } from "../../utils/security/keys";
 
 interface VoiceRecorderProps {
     onTranscription: (text: string) => void;
@@ -65,7 +65,6 @@ export default function VoiceRecorder({ onTranscription }: VoiceRecorderProps) {
             const data = await res.json();
 
             onTranscription(data.text);
-            // onTranscription("data.text");
         } catch(error) {
             console.error("Transcription failed: ", error);
         } finally {

@@ -17,7 +17,7 @@ import Animated, {
   withTiming,
   useAnimatedStyle,
 } from "react-native-reanimated";
-import VoiceRecorder from "../components/VoiceRecorder";
+import VoiceRecorder from "../components/vui/VoiceRecorder";
 import { OpenAI } from "openai";
 import { getCropCentroidFromBoundary, haversineDistance, reverseGeocode } from "../utils/geocode";
 import { translateToEnglish } from "../utils/translate-to-english";
@@ -25,6 +25,7 @@ import { normalizeCropName } from "../utils/normalize";
 import { OPENAI_API_KEY } from "../utils/security/keys";
 import { logoutUser } from "../services/authService";
 import { useAuth } from "../context/AuthContext";
+import { getCurrentLocation, renderCropQueryResults } from "../components/vui/utilities";
 
 
 export const MapScreen: React.FC = () => {
@@ -32,7 +33,7 @@ export const MapScreen: React.FC = () => {
   const openAIClient = new OpenAI({
     apiKey: OPENAI_API_KEY,
   });
-  const { logout } = useAuth();
+  const { logout, user, userRole } = useAuth();
   // states
   const mapRef = useRef<MapView | null>(null);
   const { t, i18n } = useTranslation();
@@ -110,9 +111,7 @@ export const MapScreen: React.FC = () => {
       cycles: [],
     };
     addParcel(p);
-    // setSelectedCrp()
     setSelected(p);
-    // bring up add crop component
     setSheet(true); 
   };
 
@@ -154,12 +153,8 @@ export const MapScreen: React.FC = () => {
 
   useEffect(() => {
     (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") return;
-      const loc = await Location.getCurrentPositionAsync({});
+      const loc = await getCurrentLocation();
       flyTo(loc.coords.latitude, loc.coords.longitude);
-      // await migrateDB();
-      // await initDB();
       const rows = await getCropsList();
       setCrops(rows);
       if(selectedCropFromSummaryPage) {
@@ -169,6 +164,8 @@ export const MapScreen: React.FC = () => {
   }, [crops.length]);
 
   useEffect(() => {
+    console.log("user: " + user);
+    console.log("user role: " + userRole);
     if(selectedCropFromCropListPage){
       try{
         const cropId = Number(selectedCropFromCropListPage);
@@ -189,7 +186,7 @@ export const MapScreen: React.FC = () => {
       }
   
       // Get current position
-      const currentLocation = await Location.getCurrentPositionAsync({});
+      const currentLocation = await getCurrentLocation();
       setCurrentUserLocation({
         latitude: currentLocation.coords.latitude,
         longitude: currentLocation.coords.longitude,
@@ -204,7 +201,8 @@ export const MapScreen: React.FC = () => {
     (async () => {
       console.log("use effect for transcription executed");
       if (transcription && isActive) {
-        await renderCropQueryResults(transcription);
+        // await renderCropQueryResults(transcription);
+        await renderCropQueryResults(transcription, crops);
       }
     })();
 
@@ -328,99 +326,6 @@ export const MapScreen: React.FC = () => {
     height.value = withTiming(newValue ? 1 : 0, { duration: 300 });
   };
 
-  async function parseCropQuery(transcribedText: string, userLocation: {lat: number, lng: number}): Promise<CropQuery> {
-    
-    const prompt = `
-    Extract structured query parameters from the user request. Return JSON only.
-    User request: "${transcribedText}"
-
-    The JSON should have:
-    - cropName (string, optional)
-    - radiusKM (number, default 1000)
-    - startDate (YYYY-MM-DD, optional)
-    - endDate (YYYY-MM-DD, optional)
-    Use user location as: {"latitude": ${userLocation.lat}, "longitude": ${userLocation.lng}}
-    `;
-    
-    const response = await openAIClient.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: prompt }],
-    });
-
-    const rawText = response.choices[0].message?.content || "{}";
-
-    // 🧹 Clean up model output: remove markdown formatting & non-JSON text
-    const cleanedText = rawText
-      .replace(/```json\s*/g, "")  // remove ```json
-      .replace(/```/g, "")         // remove ```
-      .trim();
-    
-    try {
-      const cropQuery = JSON.parse(cleanedText) as CropQuery;
-      return cropQuery;
-    } catch (error) {
-      console.error("❌ Failed to parse JSON:", error, "\nRaw output:", rawText);
-      return {} as CropQuery;
-    }
-  }
-
-  function filterCropsByCropQuery(crops: Crop[], query: CropQuery) {
-    const cropsList = crops.filter(c => {
-      const {lat, lng} = getCropCentroidFromBoundary(c.boundary);
-      const distance = haversineDistance(
-        query.location!.latitude,
-        query.location!.longitude,
-        lat,
-        lng
-      );
-      const withinRadius = distance <= query.radiusKm;
-      const matchesName = query.cropName ? c.cropName.toLowerCase() === query.cropName.toLowerCase() : true;
-      const inDateRange = (!query.startDate || c.harvestDate >= query.startDate) &&
-                          (!query.endDate || c.harvestDate <= query.endDate);
-      return matchesName && (withinRadius || inDateRange);
-    });
-    return cropsList;
-  }
-
-  async function renderCropQueryResults(transcribedText: string) {
-    if(transcribedText) {
-      console.log("Transcription available");
-      
-      // fetch user's current location
-      const userLocation = currentUserLocation ? {lat: currentUserLocation.latitude, lng: currentUserLocation.longitude} : {lat: 13.004881, lng: 77.708927};
-
-      const { englishText, language } = await translateToEnglish(transcribedText);
-
-      // parse transcription to crop query scheme
-      let cropQuery = await parseCropQuery(englishText, userLocation);
-      if(!cropQuery){
-        cropQuery = { radiusKm: 1000,
-          cropName: "rice",
-          startDate: "2025-01-01", // YYYY-MM-DD
-          endDate: "2025-12-31",
-          location: {latitude: 13.004834, longitude: 77.708848 },
-        };
-      } else {
-        if(cropQuery.cropName) {
-          console.log("cropQuery before normalizing: ", cropQuery);
-          cropQuery.cropName = normalizeCropName(cropQuery.cropName);
-          console.log("cropQuery after normalizing: ", cropQuery);
-        }
-      }
-      
-      // filter crops by query
-      const filteredResults = filterCropsByCropQuery(crops, cropQuery);
-      const cropsStr = JSON.stringify(filteredResults);
-      // navigates to the crop query summary screen with the serialized results
-      router.push({
-        pathname: "/crop-query-results",
-        params: { cropsFromTranscribedFilter: cropsStr}
-      });
-      
-    }
-    console.log("Transcription not available. Returning dummy crop query");
-  }
-
   async function handlePolygonSelection(crop: Crop) {
     const reverseGeocodeLocation = await reverseGeocode(crop.location);
     crop.locationName = reverseGeocodeLocation;
@@ -492,11 +397,9 @@ export const MapScreen: React.FC = () => {
                   highlightedPolygonId === crop.id
                   ? 'rgba(255, 215, 0, 0.4)' // light gold fill
                   : 'rgba(34, 139, 34, 0.3)' // normal green
-                  // `${COLORS[index % COLORS.length]}55`
                 } // semi-transparent fill
                 tappable
                 onPress={async () => await handlePolygonSelection(crop)} // <-- open modal on tap
-                // onTouchStart={}
               />
               <Marker coordinate={centroid}>
                 <Callout>
@@ -550,16 +453,10 @@ export const MapScreen: React.FC = () => {
         {isLanguagePicker && <LanguageSelector />}
       </Animated.View>
      
-      {/* <VoiceTranscriptionBox 
-        text={transcription}
-      /> */}
-
       {/* FABs */}
       <View style={styles.fabs}>
         <VoiceRecorder onTranscription={(transcribedText) => {
           handleOnTranscription(transcribedText);
-          // setTranscription(transcribedText); 
-          // console.log("transcribed text: ", transcribedText);
         }}/>
         <Button title={t("clear")}onPress={handleClear} />
         <Button title={t("zoomIn")} onPress={() => handleZoom(true)} />

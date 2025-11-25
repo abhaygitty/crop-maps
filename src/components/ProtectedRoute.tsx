@@ -1,6 +1,6 @@
-import React, { ReactNode, useContext, useEffect } from "react";
+import React, { ReactNode, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
-import { Redirect, router, Slot, useRouter, useSegments } from "expo-router";
+import { Redirect, useRouter, useSegments } from "expo-router";
 import { ActivityIndicator, View } from "react-native";
 
 interface ProtectedRouteProps {
@@ -12,17 +12,6 @@ export const ProtectedRoute = ({ allowedRoles, children }: ProtectedRouteProps) 
     const { isAuthenticated, userRole } = useContext(AuthContext);
     const router = useRouter();
     const segments = useSegments();
-
-    // useEffect(() => {
-    //     console.log("Protected Route user: ", isAuthenticated);
-    //     if(!isAuthenticated)
-    //         router.replace("/login");
-    //     else if(allowedRoles && !allowedRoles.includes(userRole ?? "")) {
-    //         router.replace("/unauthorized");
-    //     }
-    // }, [isAuthenticated, userRole]);
-
-    
 
     // 🚫 Not logged in → redirect (but only if not already on /login)
     if (!isAuthenticated && segments[0] !== "login") {
@@ -41,5 +30,4 @@ export const ProtectedRoute = ({ allowedRoles, children }: ProtectedRouteProps) 
     }
     
     return <>{children}</>;
-    // return <Slot />;
 }

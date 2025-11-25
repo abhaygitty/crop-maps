@@ -13,7 +13,7 @@ export default function TabLayout() {
   const colorScheme = useColorScheme();
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute allowedRoles={["farmer", "buyer"]}>
       <Tabs
         screenOptions={{
           tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,

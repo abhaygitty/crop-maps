@@ -89,14 +89,12 @@ export const runQueryWithAutoBackup = async (
   params: any[] = []
 ) => {
     try {
-        const cols = await db.getAllAsync(`PRAGMA table_info(users);`);
-        console.log("columns: ", cols);
         const result = await db.runAsync(sql, params);
 
         // Trigger debounced backup if data changes
         if (/^(INSERT|UPDATE|DELETE)/i.test(sql.trim())) {
             console.log("insert update or delete detected. Triggering backup...");
-            // scheduleBackup();
+            scheduleBackup();
         }
         return result;
     } catch(error) {

@@ -25,5 +25,6 @@ export interface CropQuery {
   radiusKm: number;       // e.g., 1000
   startDate?: string;     // e.g., today
   endDate?: string;       // e.g., today + 3 months
-  location?: { latitude: number; longitude: number }; // user current location
+  // userLocation?: { latitude: number; longitude: number }; // user current location
+  location?: { latitude: number; longitude: number };
 }

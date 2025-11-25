@@ -5,7 +5,7 @@ import {
   logoutUser,
   getCurrentUserRole,
   getCurrentToken,
-//   initializeUserTable,
+  getCurrentUser,
 } from "@/src/services/authService";
 
 type Role = "farmer" | "buyer" | "admin";
@@ -45,7 +45,6 @@ export const AuthProvider = ({ children }: {children: ReactNode }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    // initializeUserTable();
     const loadUser = async () => {
       const token = await getCurrentToken();
       const role = await getCurrentUserRole();
@@ -61,8 +60,10 @@ export const AuthProvider = ({ children }: {children: ReactNode }) => {
     const token = await loginUser(email, password);
     if (token) {
       const role = await getCurrentUserRole();
+      const user = await getCurrentUser();
       setUserRole(role);
       setIsAuthenticated(true);
+      setUser(user);
       return true;
     }
     return false;

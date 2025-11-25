@@ -15,10 +15,6 @@ export default function HomeScreen() {
 
   useEffect(() => {
     (async () => {
-      // await ensureAllTables([cropSchema, userSchema, weatherSchema]);
-      await useDatabaseLifecycle();
-      console.log("All DB tables ensured");
-      // await initDB();
       const rows = await getCropsList();
       setCrops(rows);
     })();
@@ -27,11 +23,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={{ flex: 1 }}>
         <StatusBar barStyle="dark-content" />
-        {/* <AuthProvider> */}
-          {/* <ProtectedRoute> */}
-            <MapScreen /> 
-          {/* </ProtectedRoute> */}
-        {/* </AuthProvider>         */}
+            <MapScreen />
     </SafeAreaView>
   );
 }

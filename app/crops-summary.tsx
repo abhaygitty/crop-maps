@@ -6,6 +6,8 @@ import * as Location from "expo-location";
 import { router } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { openDatabase } from "@/src/db/db-backup-restore";
+import VoiceRecorder from "@/src/components/vui/VoiceRecorder";
+import { getCurrentLocation, renderCropQueryResults } from "@/src/components/vui/utilities";
 
 interface CropSummary {
     cropName: string;
@@ -17,35 +19,47 @@ interface CropSummary {
 
 const db = openDatabase();
 
+// this could be apt for the buyer as it fetches information based on the logged in user's location within a radius of 1000 kms
 const CropSummaryScreen = () => {
     const [summaries, setSummaries] = useState<CropSummary[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState("");
     const { t } = useTranslation();
-
+    const [transcription, setTranscription] = useState<string | "">("");
+    const [crops, setCrops] = useState<Crop[]>([]);
+    
     useEffect(() => {
         loadCropSummary();
-    }, []);
+    }, [location]);    
 
-    const loadUsers = async () => {
-        try {
-            const users = await getAllUsers();
-            console.log(users);
-        } catch(error) {
-            console.log("error fetching users: ", error);
-        }
-    };
+    useEffect(() => {
+        let isActive = true;
+    
+        // async function definition and invokation - IIFE Immediately Invoked Function Expression.
+        (async () => {
+          console.log("use effect for transcription executed");
+          if (transcription && isActive) {
+            // await renderCropQueryResults(transcription);
+            await renderCropQueryResults(transcription, crops);
+          }
+        })();
+    
+        return () => {
+          isActive = false; // cancel any pending work
+        };
+    }, [transcription]);
 
     const loadCropSummary = async () => {
         setLoading(true);
         try {
             const crops = await getCropsList();
+            setCrops(crops);
             if(crops && crops.length !== 0) {
-                const grouped = groupByCrop(crops);
+                const grouped = await groupByCrop(crops); // grouped by crop name
                 const summariesWithGeo = await Promise.all(
                     grouped.map(async g => {
                         const readableName = await reverseGeocode(g.location);
-                        const avgYieldNearby = computeAverageYield(g, crops);
+                        const avgYieldNearby = computeAverageYield(g);
                         return {
                             cropName: g.cropName,
                             totalQuantity: g.totalQuantity,
@@ -66,30 +80,48 @@ const CropSummaryScreen = () => {
         
     };
 
-    const groupByCrop = (crops: Crop[]) => {
+    const filterCropsWithinRadius = async (crops: Crop[]) => {
+        const locationCoords = await getCurrentLocation();
+        const lat1 = locationCoords?.coords.latitude;
+        const lon1 = locationCoords?.coords.longitude;
+        const cropsWithinRadius = crops.filter(c => {
+            const [lat2, lon2] = c.location.split(":").map(Number);
+            const dist = haversineDistance((lat1 !== undefined ? lat1 : 13.004951), (lon1 !== undefined ? lon1 : 77.709200), lat2, lon2);
+            return dist <= 1000; // kilometer
+        });
+        return cropsWithinRadius;
+    }
+    // group by crop within radius limits 1000 km
+    const groupByCrop = async (crops: Crop[]) => {
+        const nearby = await filterCropsWithinRadius(crops);
         const grouped: Record<string, any> = {};
-        for(const c of crops) {
-            if(!grouped[c.cropName]) {
-                grouped[c.cropName] = {
-                    cropName: c.cropName,
-                    totalQuantity: 0,
-                    earliestHarvest: c.harvestDate,
-                    location: c.location
-                };
+        if(nearby && nearby.length > 0) {
+            for(const c of nearby) {
+                if(!grouped[c.cropName]) {
+                    // check if it is within the haversine distance of the user's current location
+                    
+                    grouped[c.cropName] = {
+                        cropName: c.cropName,
+                        totalQuantity: 0,
+                        earliestHarvest: c.harvestDate,
+                        location: c.location,
+                        totalFieldCount: 0
+                    };
+                }
+                grouped[c.cropName].totalQuantity += c.quantity;
+                grouped[c.cropName].totalFieldCount++;
+                if(new Date(c.harvestDate) < new Date(grouped[c.cropName].earliestHarvest)) {
+                    grouped[c.cropName].earliestHarvest = c.harvestDate;
+                }
             }
-            grouped[c.cropName].totalQuantity += c.quantity;
-            if(new Date(c.harvestDate) < new Date(grouped[c.cropName].earliestHarvest)) {
-                grouped[c.cropName].earliestHarvest = c.harvestDate;
-            }
+            return Object.values(grouped);
         }
-        return Object.values(grouped);
+        return Object.values(grouped);        
     };
     
     const reverseGeocode = async (locationStr: string): Promise<string> => {
         try {
             const [lat, lng] = locationStr.split(":").map(s => parseFloat(s));
-            // const lat: number = 38.949551;
-            // const lng: number = -121.134732;
             const res = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng});
             if(res && res.length > 0) {
                 const place = res[0];
@@ -102,18 +134,10 @@ const CropSummaryScreen = () => {
         }
     };
 
-    const computeAverageYield = (target: any, crops: Crop[]) => {
-        const [lat1, lon1] = target.location.split(":").map(Number);
-        const nearby = crops.filter(c => {
-            const [lat2, lon2] = c.location.split(":").map(Number);
-            const dist = haversineDistance(lat1, lon1, lat2, lon2);
-            return dist <= 1000; // kilometer
-        })
-
-        if(nearby.length === 0) 
+    const computeAverageYield = (cropsWithinRadius: any) => {
+        if(cropsWithinRadius.length === 0) 
             return 0;
-        const total = nearby.reduce((sum, c) => sum + c.quantity, 0);
-        return Math.round(total / nearby.length);
+        return Math.round(cropsWithinRadius.totalQuantity / cropsWithinRadius.totalFieldCount);
     };
 
     const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
@@ -132,6 +156,11 @@ const CropSummaryScreen = () => {
         s.locationName.toLowerCase().includes(filter.toLowerCase()) || 
         s.cropName.toLowerCase().includes(filter.toLowerCase()) 
     );
+
+    function handleOnTranscription(transcribedText: string) {
+        setTranscription(transcribedText);
+        console.log("Transcription state updated with: ", transcribedText);
+    }
 
     const renderItem: ListRenderItem<CropSummary> = ({ item }) => (
         <TouchableOpacity
@@ -173,7 +202,10 @@ const CropSummaryScreen = () => {
                     renderItem={renderItem}
                 />
             )}
-            <Button title="View Crop Summary coming shortly...****" />  
+            <Button title="View Crop Summary coming shortly...****" /> 
+            <VoiceRecorder onTranscription={(transcribedText) => {
+                handleOnTranscription(transcribedText);
+            }}/>
         </View>
     );
 };
