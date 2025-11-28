@@ -1,7 +1,7 @@
 // app/(tabs)/contracts/create.tsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
 
@@ -16,6 +16,7 @@ export default function CreateContractScreen() {
   const [grade, setGrade] = useState<QualityGrade>('A');
   const [insurance, setInsurance] = useState<boolean>(false);
   const [radiusKm, setRadiusKm] = useState<string>('100'); // default 100 km
+  const { selectedCrop, cropQuantity, earliestCropHarvestDate } = useLocalSearchParams();
 
   function onSubmit() {
     const req = {
@@ -34,6 +35,18 @@ export default function CreateContractScreen() {
       params: { request: JSON.stringify(req) },
     });
   }
+
+  useEffect(() => {
+    if(selectedCrop) {
+      setCropName(selectedCrop.toString());
+    }
+    if(cropQuantity) {
+      setQuantity(cropQuantity.toString());
+    }
+    if(earliestCropHarvestDate) {
+      setDeliveryDate(new Date(earliestCropHarvestDate.toString()));
+    }
+  }, []);
 
   return (
     <View style={styles.container}>

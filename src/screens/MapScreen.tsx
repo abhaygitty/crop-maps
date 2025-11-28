@@ -6,8 +6,8 @@ import { TOKENS } from "../theme";
 import { TopBar } from "../components/TopBar";
 import { useParcels } from "../store/useParcels";
 import { CropTagSheet } from "../components/CropTagSheet";
-import { Parcel, CropCycle, CropQuery } from "../types";
-import { addCrop, getCropsList, Crop, deleteCrop, migrateDB } from "../db/Database";
+import { Parcel, CropCycle } from "../types";
+import { addCrop, getCropsList, Crop, deleteCrop } from "../db/Database";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import LanguageSelector from "../components/LanguageSelector";
@@ -18,35 +18,23 @@ import Animated, {
   useAnimatedStyle,
 } from "react-native-reanimated";
 import VoiceRecorder from "../components/vui/VoiceRecorder";
-import { OpenAI } from "openai";
-import { getCropCentroidFromBoundary, haversineDistance, reverseGeocode } from "../utils/geocode";
-import { translateToEnglish } from "../utils/translate-to-english";
-import { normalizeCropName } from "../utils/normalize";
-import { OPENAI_API_KEY } from "../utils/security/keys";
-import { logoutUser } from "../services/authService";
+import { reverseGeocode } from "../utils/geocode";
 import { useAuth } from "../context/AuthContext";
 import { getCurrentLocation, renderCropQueryResults } from "../components/vui/utilities";
 
 
 export const MapScreen: React.FC = () => {
-
-  const openAIClient = new OpenAI({
-    apiKey: OPENAI_API_KEY,
-  });
   const { logout, user, userRole } = useAuth();
   // states
   const mapRef = useRef<MapView | null>(null);
   const { t, i18n } = useTranslation();
-  const { parcels, addParcel, addOrUpdateCycle, getStatusForParcel } = useParcels();
+  const { addParcel, addOrUpdateCycle } = useParcels();
   const [selected, setSelected] = useState<Parcel | null>(null);
   const [sheet, setSheet] = useState(false);
   const [crops, setCrops] = useState<Crop[]>([]);
   const router = useRouter();
   const [points, setPoints] = useState<LatLng[]>([]);
   const height = useSharedValue(0);
-  const [currentUserLocation, setCurrentUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
   const [finalized, setFinalized] = useState(false);
   const [region, setRegion] = useState<Region>({
     latitude: 13.6145,
@@ -150,7 +138,6 @@ export const MapScreen: React.FC = () => {
     
   }
 
-
   useEffect(() => {
     (async () => {
       const loc = await getCurrentLocation();
@@ -181,22 +168,14 @@ export const MapScreen: React.FC = () => {
       // Request permission
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        setErrorMsg('Permission to access location was denied');
+        console.log('Permission to access location was denied');
         return;
       }
-  
-      // Get current position
-      const currentLocation = await getCurrentLocation();
-      setCurrentUserLocation({
-        latitude: currentLocation.coords.latitude,
-        longitude: currentLocation.coords.longitude,
-      });
     })();
   }, []);
 
   useEffect(() => {
     let isActive = true;
-
     // async function definition and invokation - IIFE Immediately Invoked Function Expression.
     (async () => {
       console.log("use effect for transcription executed");

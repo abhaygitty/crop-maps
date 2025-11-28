@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import { openDatabase } from "@/src/db/db-backup-restore";
 import VoiceRecorder from "@/src/components/vui/VoiceRecorder";
 import { getCurrentLocation, renderCropQueryResults } from "@/src/components/vui/utilities";
+import { useAuth } from "@/src/context/AuthContext";
 
 interface CropSummary {
     cropName: string;
@@ -27,6 +28,7 @@ const CropSummaryScreen = () => {
     const { t } = useTranslation();
     const [transcription, setTranscription] = useState<string | "">("");
     const [crops, setCrops] = useState<Crop[]>([]);
+    const { login, user } = useAuth();
     
     useEffect(() => {
         loadCropSummary();
@@ -162,14 +164,27 @@ const CropSummaryScreen = () => {
         console.log("Transcription state updated with: ", transcribedText);
     }
 
+    function handleOnPress(item: CropSummary) {
+        if(user && user?.role === "farmer") {
+            router.push({
+                pathname: '/',
+                params: { selectedCropFromSummaryPage: item.cropName }
+            });
+        } else if(user?.role === "buyer") {
+            router.push({
+                pathname: '/(tabs)/contracts/create-contract',
+                params: { selectedCrop: item.cropName, 
+                    cropQuantity: item.totalQuantity,
+                    earliestCropHarvestDate: item.earliestHarvest 
+                }
+            });
+        }        
+    }
+
     const renderItem: ListRenderItem<CropSummary> = ({ item }) => (
         <TouchableOpacity
             onPress={() => {
-                // Alert.alert("crop selected on summary page");
-                router.push({
-                    pathname: '/',
-                    params: { selectedCropFromSummaryPage: item.cropName }
-                })
+                handleOnPress(item);
             }}
         >
             <View style={styles.card}>
