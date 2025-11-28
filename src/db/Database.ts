@@ -1,9 +1,5 @@
-// src/Database.ts
-// import * as SQLite from "expo-sqlite";
 import { openDatabase, runQueryWithAutoBackup } from "./db-backup-restore";
 
-// const db = SQLite.openDatabaseSync("crops.db");
-// await restoreDatabase();
 const db = openDatabase();
 
 export interface Crop {
