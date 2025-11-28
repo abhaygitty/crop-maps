@@ -1,7 +1,6 @@
 import { Button, View, Text, FlatList, StyleSheet, ActivityIndicator, TextInput, ListRenderItem, TouchableOpacity, Alert } from "react-native";
 import React, { useEffect, useState } from "react";
-import { Crop, getAllUsers, getCropsList } from "../src/db/Database";
-import * as SQLite from "expo-sqlite";
+import { Crop, getAllUserCrops, getCropsForUser, getCropsList } from "../src/db/Database";
 import * as Location from "expo-location";
 import { router } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -28,7 +27,7 @@ const CropSummaryScreen = () => {
     const { t } = useTranslation();
     const [transcription, setTranscription] = useState<string | "">("");
     const [crops, setCrops] = useState<Crop[]>([]);
-    const { login, user } = useAuth();
+    const { user } = useAuth();
     
     useEffect(() => {
         loadCropSummary();
@@ -51,11 +50,23 @@ const CropSummaryScreen = () => {
         };
     }, [transcription]);
 
+    const loadCrops = async () => {
+        if(user) {
+            if(user.role === "farmer" && user.id) {
+                const crops = await getCropsForUser(user.id);
+            } else if(user.role === "buyer") {
+                const crops = await getCropsList();
+            }
+            if(crops) {
+                setCrops(crops);
+            }
+        } 
+    };
+
     const loadCropSummary = async () => {
         setLoading(true);
-        try {
-            const crops = await getCropsList();
-            setCrops(crops);
+        try {            
+            loadCrops();
             if(crops && crops.length !== 0) {
                 const grouped = await groupByCrop(crops); // grouped by crop name
                 const summariesWithGeo = await Promise.all(

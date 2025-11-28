@@ -12,6 +12,14 @@ export interface Crop {
   locationName?: string;
 }
 
+export interface UserCrop {
+  id: number;
+  userId: number;
+  cropId: number;
+  relationshipRole: string;
+  createdAt: string;
+}
+
 export async function resetDB() {
   console.log("Resetting crops table...");
   await db.execAsync(`
@@ -51,17 +59,24 @@ async function initDB() {
   `);
 }
 
-export async function addCrop(cropName: string, location: string, harvestDate: string, quantity: number, boundary: string, locationName: string) {
-  await runQueryWithAutoBackup(
+export async function addCrop(userId: number, cropName: string, location: string, harvestDate: string, quantity: number, boundary: string, locationName: string) {
+  const result = await runQueryWithAutoBackup(
     db,
     `INSERT INTO crops (cropName, location, harvestDate, quantity, boundary, locationName) VALUES (?, ?, ?, ?, ?, ?)`,
     [cropName, location, harvestDate, quantity, boundary, locationName]
   );
 
-  // await db.runAsync(
-  //   `INSERT INTO crops (cropName, location, harvestDate, quantity, boundary, locationName) VALUES (?, ?, ?, ?, ?, ?)`,
-  //   [cropName, location, harvestDate, quantity, boundary, locationName]
-  // );
+  const cropId = (result?.lastInsertRowId as number) ?? null;
+  if(!cropId) {
+    console.error("Could not retrieve lastInsertRowid for crops");
+    return;
+  }
+
+  await db.runAsync(
+    `INSERT INTO user_crops (userId, cropId, relationshipRole)
+     VALUES (?, ?, ?)`,
+     [userId, cropId, "owner"]
+  );
 }
 
 export async function deleteCrop(cropId: number) {
@@ -74,6 +89,21 @@ export async function deleteCrop(cropId: number) {
 
 export async function getAllUsers() {
   return await db.getAllAsync("select * from users");
+}
+
+export async function getAllUserCrops() {
+  return await db.getAllAsync("select * from user_crops");
+}
+
+export async function getCropsForUser(userId: number) {
+  const rows = await db.getAllAsync<any>(
+    `SELECT c.*, uc.relationshipRole
+    FROM crops c
+    JOIN user_crops uc ON uc.cropId = c.id
+    WHERE uc.userId = ?`,
+    [userId]
+  );
+  return rows;
 }
 
 export async function getCrops() {

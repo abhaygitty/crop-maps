@@ -11,6 +11,7 @@ import {
 type Role = "farmer" | "buyer" | "admin";
 
 interface User {
+    id?: number;
     name?: string;
     email?: string;
     role?: Role;

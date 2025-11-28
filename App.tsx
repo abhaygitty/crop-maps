@@ -1,11 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { SafeAreaView, StatusBar } from "react-native";
-import { MapScreen } from "./src/screens/MapScreen";
-import { addCrop, getCrops, getCropsList } from "./src/db/Database";
-import { Platform, StyleSheet } from 'react-native';
+import { getCropsList } from "./src/db/Database";
+import { StyleSheet } from 'react-native';
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { NavigationContainer } from "@react-navigation/native";
-import CropListScreen from "./src/screens/CropListScreen";
 
 
 export type RootStackParamList = {
@@ -25,12 +21,6 @@ export default function App() {
       setCrops(rows);
     })();
   }, []);
-
-  async function handleAddCrop() {
-    await addCrop("Wheat", "12.9716,77.5946", "2025-11-30", 20, "", "");
-    const rows = await getCropsList();
-    setCrops(rows);
-  }
 
   return (
     // <>

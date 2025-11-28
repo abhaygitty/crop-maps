@@ -84,6 +84,7 @@ export async function loginUser(email: string, password: string): Promise<string
     await SecureStore.setItemAsync("userRole", user.role);
     await SecureStore.setItemAsync("userName", user.name);
     await SecureStore.setItemAsync("userEmail", user.email);
+    await SecureStore.setItemAsync("userId", user.id ? user.id?.toString() : "");
 
     return token;
 }
@@ -100,11 +101,13 @@ export async function getCurrentUserRole(): Promise<string | null> {
 export async function getCurrentUser(): Promise<User | null> {
     const userName = await SecureStore.getItemAsync("userName");
     const userEmail = await SecureStore.getItemAsync("userEmail");
-    let userRole = await SecureStore.getItemAsync("userRole");
+    const userRole = await SecureStore.getItemAsync("userRole");
+    const userId = await SecureStore.getItemAsync("userId");
     const user: User = {
         name: userName === null ? "" : userName,
         email: userEmail === null ? "" : userEmail,
         role: userRole as ("farmer" | "buyer" | "admin"),
+        id: userId === null ? 0 : Number(userId),
         passwordHash: ""
     };
     return user;

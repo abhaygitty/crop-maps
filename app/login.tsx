@@ -2,9 +2,11 @@ import React, { useEffect, useRef, useState } from "react";
 import { View, TextInput, Button, Text, Alert, TouchableOpacity, Animated, AccessibilityInfo, KeyboardAvoidingView, ActivityIndicator, Platform, StyleSheet } from "react-native";
 import { useAuth } from "@/src/context/AuthContext";
 import { router } from "expo-router";
-import { getAllUsers } from "@/src/db/Database";
+import { getAllUserCrops, getAllUsers } from "@/src/db/Database";
 import * as Location from "expo-location";
 import { Picker } from "@react-native-picker/picker";
+import { ensureAllTables } from "@/src/db/migration";
+import { cropSchema, userCropSchema, userSchema, weatherSchema } from "@/src/db/schema";
 
 let LinearGradient: any = null;
 try {
@@ -31,6 +33,14 @@ export default function LoginScreen() {
     }).start();
   }, []);
 
+  // useEffect(() => {
+  //   (async () => {
+  //     console.log("ensure all tables triggered...");
+  //     await ensureAllTables([cropSchema, userSchema, weatherSchema, userCropSchema]);
+  //     console.log("ensure all tables triggered...");
+  //   })();
+  // }, []);
+
   const handleLogin = async () => {
     setError(null);
     if(!email || !password) {
@@ -40,7 +50,6 @@ export default function LoginScreen() {
     }
     setLoading(true);
     try {
-      // await loadUsers();
       const success = await login(email, password);
       if (success) {
         if(user?.role === "farmer")
@@ -74,9 +83,19 @@ export default function LoginScreen() {
     }
   };
 
+  const loadUserCrops = async () => {
+    try {
+      const userCrops = await getAllUserCrops();
+      console.log("userCrops: ", userCrops);
+    } catch(error) {
+      console.log("error fetching user crops: ", error);
+    }
+  };
+
   useEffect(() => {
     (async () => {
       await loadUsers();
+      await loadUserCrops();
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         console.log('Permission to access location was denied');

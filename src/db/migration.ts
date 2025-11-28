@@ -1,4 +1,3 @@
-import * as SQLite from "expo-sqlite";
 import type { TableSchema } from "./schema";
 import { openDatabase } from "./db-backup-restore";
 

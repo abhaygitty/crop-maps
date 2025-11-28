@@ -115,6 +115,7 @@ export const MapScreen: React.FC = () => {
     const cropName = cropCycle.cropType;
     const harvestDate = cropCycle.harvestDate;
     const quantity = cropCycle.expectedQty;
+    const userId = user && user.id ? user?.id : 1;
     if(points.length>2) {
       // randomly taking the first coordinates to pin
       const latitude = points[0].latitude;
@@ -123,7 +124,7 @@ export const MapScreen: React.FC = () => {
       const boundary = JSON.stringify(points);
       const locationName = await reverseGeocode(`${latitude}:${longitude}`);
       try {
-        await addCrop(cropName, "" + latitude + ":" + longitude, harvestDate, quantity, boundary, locationName);
+        await addCrop(userId, cropName, "" + latitude + ":" + longitude, harvestDate, quantity, boundary, locationName);
       } catch(error) {
         console.error("DB error occured while inserting record into crops DB", error);
       }

@@ -3,7 +3,7 @@ export interface TableSchema {
     columns: Record<string, string>; // column name -> SQL type
 }
 
-export const cropSchema = {
+export const cropSchema: TableSchema = {
     tableName: "crops",
     columns: {
         id: "INTEGER PRIMARY KEY AUTOINCREMENT",
@@ -35,5 +35,16 @@ export const weatherSchema: TableSchema = {
         cropId: "INTEGER",
         forecastDate: "TEXT",
         temperature: "REAL",
+    },
+};
+
+export const userCropSchema: TableSchema = {
+    tableName: "user_crops",
+    columns: {
+        id: "INTEGER PRIMARY KEY AUTOINCREMENT",
+        userId: "INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE",
+        cropId: "INTEGER NOT NULL REFERENCES crops(id) ON DELETE CASCADE",
+        relationshipRole: "TEXT DEFAULT 'owner'",
+        createdAt: "TEXT DEFAULT CURRENT_TIMESTAMP",
     },
 };
