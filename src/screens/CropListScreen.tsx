@@ -1,23 +1,47 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, FlatList, StyleSheet, TouchableOpacity } from "react-native";
-import { Crop, getCrops, getCropsList } from "../db/Database";
+import { Crop, getCrops, getCropsForUser, getCropsList } from "../db/Database";
 import { ListRenderItem } from "react-native";
 import { enrichCropLocation } from "../utils/enrichCropLocation";
 import { router } from "expo-router";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "../context/AuthContext";
 
 export default function CropListScreen() {
     const [crops, setCrops] = useState<Crop[]>([]);
     const { t } = useTranslation();
+    const { user } = useAuth();
+
+    /*
+      If role == farmer --> get crops that are listed by the logged in user
+      If role == buyer --> get crops that are listed within the logged in user's location's radius (defaulted to 1000 km)
+      If role == admin --> get all crops (for now). In the future it would be all crops that are grouped by their location radius.
+    */
 
     useEffect(() => {
-        async function fetchData() {
-            let data = await getCropsList();
-            console.log("crops from db: ", data);
-            setCrops(data);
-        }
-        fetchData();
+        (async () => {
+          if(user) {
+            if(user.id && user.role && user.role === "farmer") {
+              await fetchDataForUser(user.id);
+            } else if(user.role === "buyer") {
+              await fetchData();
+            } else if(user.role === "admin") {
+              await fetchData();
+            }
+          }
+        })();        
     }, []);
+
+  async function fetchData() {
+    let data = await getCropsList();
+    console.log("crops from db: ", data);
+    setCrops(data);
+  };
+
+  async function fetchDataForUser(userId: number) {
+    const cropsData = await getCropsForUser(userId);
+    setCrops(cropsData);
+  };
 
   async function handleCropSelection(crop: Crop) {
     await enrichCropLocation(crop);

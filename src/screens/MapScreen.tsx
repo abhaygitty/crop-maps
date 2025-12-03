@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Button, View, StyleSheet, TouchableOpacity, Text, Platform, Alert, Modal } from "react-native";
+import { Button, View, StyleSheet, TouchableOpacity, Text, Platform, Alert, Modal, Dimensions } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE, Polygon, Region, LatLng, Callout } from "react-native-maps";
 import * as Location from "expo-location";
 import { TOKENS } from "../theme";
@@ -21,6 +21,7 @@ import VoiceRecorder from "../components/vui/VoiceRecorder";
 import { reverseGeocode } from "../utils/geocode";
 import { useAuth } from "../context/AuthContext";
 import { getCurrentLocation, renderCropQueryResults } from "../components/vui/utilities";
+import { GlobalSettingsMenu } from "../components/GlobalSettingsMenu";
 
 
 export const MapScreen: React.FC = () => {
@@ -45,7 +46,6 @@ export const MapScreen: React.FC = () => {
   const [selectedCrp, setSelectedCrp] = useState<Crop | null>(null);
   const [highlightedPolygonId, setHighlightedPolygonId] = useState<number | null>(null);
   const { selectedCropFromSummaryPage } = useLocalSearchParams(); 
-  const { selectedCropFromCropListPage } = useLocalSearchParams(); 
   const [isLanguagePicker, setIsLanguagePicker] = useState(false);
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: height.value,
@@ -53,6 +53,8 @@ export const MapScreen: React.FC = () => {
   }));
 
   const [transcription, setTranscription] = useState<string | "">("");
+  const [isMapReady, setIsMapReady] = useState(false);
+
   const closeModal = () => setSelectedCrp(null);
 
   const handleZoom = (zoomIn: boolean) => {
@@ -79,6 +81,7 @@ export const MapScreen: React.FC = () => {
 
   const handleLogoutUser = async () => {
     await logout();
+    router.replace("/login");
   };
 
   const handleFinalize = () => {
@@ -139,32 +142,36 @@ export const MapScreen: React.FC = () => {
     
   }
 
+  
+
+  // loads crops
   useEffect(() => {
     (async () => {
       const loc = await getCurrentLocation();
       flyTo(loc.coords.latitude, loc.coords.longitude);
       const rows = await getCropsList();
       setCrops(rows);
-      if(selectedCropFromSummaryPage) {
-        focusOnEarliestPolygon(selectedCropFromSummaryPage.toString());
-      }
     })();
-  }, [crops.length]);
+  }, []);
+
+  // focus on the polygon selected from summary page
+  useEffect(() => {
+    if(!isMapReady) return;
+    if(!selectedCropFromSummaryPage) return;
+    if(!crops || crops.length === 0) return;
+
+    try{
+      console.log("is map ready, crops loaded, crop id received...");
+      const cropId = Number(selectedCropFromSummaryPage);
+      focusOnSelectedCropPolygon(cropId);
+    } catch(e) {
+      console.error("Could not parse string to Number", e);
+    }
+  }, [isMapReady, selectedCropFromSummaryPage, crops]);
 
   useEffect(() => {
     console.log("user: " + user);
     console.log("user role: " + userRole);
-    if(selectedCropFromCropListPage){
-      try{
-        const cropId = Number(selectedCropFromCropListPage);
-        focusOnSelectedCropPolygon(cropId);
-      } catch(e) {
-        console.error("Could not parse string to Number", e);
-      }
-    }
-  }, [selectedCropFromCropListPage]);
-
-  useEffect(() => {
     (async () => {
       // Request permission
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -181,7 +188,6 @@ export const MapScreen: React.FC = () => {
     (async () => {
       console.log("use effect for transcription executed");
       if (transcription && isActive) {
-        // await renderCropQueryResults(transcription);
         await renderCropQueryResults(transcription, crops);
       }
     })();
@@ -210,15 +216,17 @@ export const MapScreen: React.FC = () => {
             };
   
             setHighlightedPolygonId(crp.id);
-            mapRef.current?.fitToCoordinates(boundaryData, {
-              edgePadding: {
-                top: 100,
-                right: 100,
-                bottom: 100,
-                left: 100
-              },
-              animated: true
-            });
+            setTimeout(() => {
+              mapRef.current?.fitToCoordinates(boundaryData, {
+                edgePadding: {
+                  top: 100,
+                  right: 100,
+                  bottom: 100,
+                  left: 100
+                },
+                animated: true
+              });
+            }, 0);
           } else {
             console.warn("No valid boundary points found for crop: ", crp.cropName);
           }
@@ -319,6 +327,7 @@ export const MapScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
+      <GlobalSettingsMenu />
       <MapView
         ref={mapRef}
         style={StyleSheet.absoluteFill}
@@ -328,6 +337,7 @@ export const MapScreen: React.FC = () => {
         onLongPress={handleLongPress}
         customMapStyle={lightMapStyle}
         onRegionChangeComplete={(r) => setRegion(r)} // keep track of the region from the currently visible region
+        onMapReady={() => setIsMapReady(true)}
       >
         {/* Marker for each tap */}
         {points.map((p, idx) => (
@@ -361,10 +371,6 @@ export const MapScreen: React.FC = () => {
           } catch (e) {
             console.error("Invalid boundary JSON", e);
             return null;
-          }
-
-          function reverseGeocode(location: any) {
-            throw new Error("Function not implemented.");
           }
 
           return (
@@ -424,7 +430,7 @@ export const MapScreen: React.FC = () => {
         </View>
       </Modal>
       <TopBar onFlyTo={flyTo} />
-      <Button title="Logout" onPress={handleLogoutUser}/>
+      {/* <Button title="Logout" onPress={handleLogoutUser}/> */}
       <TouchableOpacity style={styles.toggleButton} onPress={togglePicker}>
         <Ionicons name="language" size={22} color="#fff" />
       </TouchableOpacity>
@@ -522,7 +528,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 5,
     elevation: 3,
-  },
+  }
 });
 
 const lightMapStyle = [

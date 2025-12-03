@@ -1,19 +1,55 @@
-import { StyleSheet } from 'react-native';
+import { ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaView, StatusBar } from "react-native";
 import { MapScreen } from "../../src/screens/MapScreen";
 import React, { useEffect, useState } from "react";
 import { getCropsList } from "../../src/db/Database";
+import { useAuth } from '@/src/context/AuthContext';
+import { useRouter } from 'expo-router';
 
 export default function HomeScreen() {
   const [crops, setCrops] = useState<any[]>([]);
+  const { user } = useAuth();
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    (async () => {
-      const rows = await getCropsList();
-      setCrops(rows);
-    })();
-  }, []);
+    if(!user)
+      return;
 
+    if(user.role === "buyer") {
+      router.replace("/crops-summary");
+      return;
+    }
+
+    // only for farmers and admin
+    (async () => {
+      try {
+        const rows = await getCropsList();
+        setCrops(rows);
+      } catch(error) {
+        console.error("Error occured while fetching crops", error);
+      } finally {
+        setLoading(false);
+      }      
+    })();
+  }, [user]);
+
+  if(!user) {
+    return (
+      <SafeAreaView style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator />
+      </SafeAreaView>
+    );
+  }
+
+  if(loading) {
+    return (
+      <SafeAreaView style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator />
+      </SafeAreaView>
+    );
+  }
+  
   return (
     <SafeAreaView style={{ flex: 1 }}>
         <StatusBar barStyle="dark-content" />

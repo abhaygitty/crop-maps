@@ -5,7 +5,7 @@ import { MapScreen } from "@/src/screens/MapScreen";
 
 export default function FarmerDashboard() {
   return (
-    <ProtectedRoute allowedRoles={["farmer"]}>
+    <ProtectedRoute allowedRoles={["farmer", "admin"]}>
         <MapScreen />
     </ProtectedRoute>
   );

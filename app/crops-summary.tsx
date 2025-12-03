@@ -8,8 +8,10 @@ import { openDatabase } from "@/src/db/db-backup-restore";
 import VoiceRecorder from "@/src/components/vui/VoiceRecorder";
 import { getCurrentLocation, renderCropQueryResults } from "@/src/components/vui/utilities";
 import { useAuth } from "@/src/context/AuthContext";
+import { GlobalSettingsMenu } from "@/src/components/GlobalSettingsMenu";
 
 interface CropSummary {
+    id: number;
     cropName: string;
     totalQuantity: number;
     earliestHarvest: string;
@@ -30,8 +32,18 @@ const CropSummaryScreen = () => {
     const { user } = useAuth();
     
     useEffect(() => {
-        loadCropSummary();
+        (async () => {
+            const cropsLoaded = await loadCrops();
+            if(cropsLoaded) {
+                console.log("crops loaded...");
+                await loadCropSummary(cropsLoaded);
+            }
+        })();
     }, [location]);    
+
+    // useEffect(() => {
+    //     loadCropSummary();
+    // }, [crops]);
 
     useEffect(() => {
         let isActive = true;
@@ -50,35 +62,96 @@ const CropSummaryScreen = () => {
         };
     }, [transcription]);
 
-    const loadCrops = async () => {
+    const loadCrops = async ():Promise<Crop[]> => {
         if(user) {
+            let userCrops;
             if(user.role === "farmer" && user.id) {
-                const crops = await getCropsForUser(user.id);
-            } else if(user.role === "buyer") {
-                const crops = await getCropsList();
+                userCrops = await getCropsForUser(user.id);
+                let cropList: Crop[] = [];
+                for(const c of userCrops){
+                    const cropItem: Crop = {
+                        cropName: c.cropName,
+                        harvestDate: c.harvestDate,
+                        location: c.location,
+                        locationName: c.locationName,
+                        quantity: c.quantity,
+                        id: c.id,
+                        boundary: c.boundary
+                    };
+                    cropList.push(cropItem);
+                }                
+                setCrops(cropList);
+                console.log("farmer role detected. allCrops object length: ", userCrops.length);
+                return cropList;
+            } else if(user.role === "buyer" || "admin") {
+                const allCrops = await getCropsList();
+                console.log("buyer role detected. allCrops object length: ", allCrops.length);
+                setCrops(allCrops);                
+                return allCrops;
+            } else {
+                console.log("no crops...neither farmer nor buyer");
+                return [];      
             }
-            if(crops) {
-                setCrops(crops);
-            }
-        } 
+        }
+        return [];
     };
 
-    const loadCropSummary = async () => {
+    const loadCropSummary = async (retrievedCrops: Crop[]) => {
+        console.log("load crop summary invoked...");
         setLoading(true);
-        try {            
-            loadCrops();
-            if(crops && crops.length !== 0) {
-                const grouped = await groupByCrop(crops); // grouped by crop name
+        try {     
+            // let cropList: Crop[] = [];       
+            // if(user) {
+            //     if(user.role === "farmer" && user.id) {
+            //         const userCrops = await getCropsForUser(user.id);
+            //         for(const c of userCrops){
+            //             const cropItem: Crop = {
+            //                 cropName: c.cropName,
+            //                 harvestDate: c.harvestDate,
+            //                 location: c.location,
+            //                 locationName: c.locationName,
+            //                 quantity: c.quantity,
+            //                 id: c.id,
+            //                 boundary: c.boundary
+            //             };
+            //             cropList.push(cropItem);
+            //         }                
+            //         setCrops(cropList);
+            //         console.log("farmer role detected. allCrops object length: ", userCrops.length);
+            //         // return true;
+            //     } else if(user.role === "buyer") {
+            //         cropList = await getCropsList();
+            //         console.log("buyer role detected. allCrops object length: ", cropList.length);
+            //         setCrops(cropList);                
+            //         // return true;
+            //     } else {
+            //         console.log("no crops...neither farmer nor buyer");
+            //         // return false;      
+            //     }
+            // }
+            
+            
+            // loadCrops();
+            // const crops = await getCropsForUser(user && user.id ? user.id : 9);
+            // setCrops(crops);
+            if(retrievedCrops && retrievedCrops.length !== 0) {
+                console.log("crops loaded in state object", retrievedCrops.length);
+                
+                // grouped by crop name
+                const grouped = await groupByCrop(retrievedCrops); // grouped by crop name
+                
+                // summarize with crop and geo location
                 const summariesWithGeo = await Promise.all(
                     grouped.map(async g => {
                         const readableName = await reverseGeocode(g.location);
                         const avgYieldNearby = computeAverageYield(g);
                         return {
+                            id: g.id,
                             cropName: g.cropName,
                             totalQuantity: g.totalQuantity,
                             earliestHarvest: g.earliestHarvest,
                             locationName: readableName,
-                            avgYieldNearby: avgYieldNearby,
+                            avgYieldNearby: avgYieldNearby                            
                         };
                     })
                 )
@@ -89,10 +162,12 @@ const CropSummaryScreen = () => {
             console.warn("exception has occured: ", e);
             setLoading(false);
             return false;
-        }
-        
+        } finally {
+            setLoading(false);
+        }        
     };
 
+    // filter crops within radius. Defaulted to 1000km
     const filterCropsWithinRadius = async (crops: Crop[]) => {
         const locationCoords = await getCurrentLocation();
         const lat1 = locationCoords?.coords.latitude;
@@ -104,16 +179,22 @@ const CropSummaryScreen = () => {
         });
         return cropsWithinRadius;
     }
+
     // group by crop within radius limits 1000 km
-    const groupByCrop = async (crops: Crop[]) => {
-        const nearby = await filterCropsWithinRadius(crops);
+    const groupByCrop = async (crps: Crop[]) => {
+        let cropListToGroup: Crop[] = [];
+        // filter crops within the haversine distance of the user's current location
+        if(user?.role === "admin") {
+            cropListToGroup = crps;
+        } else {
+            cropListToGroup = await filterCropsWithinRadius(crps);
+        }
         const grouped: Record<string, any> = {};
-        if(nearby && nearby.length > 0) {
-            for(const c of nearby) {
-                if(!grouped[c.cropName]) {
-                    // check if it is within the haversine distance of the user's current location
-                    
+        if(cropListToGroup && cropListToGroup.length > 0) {
+            for(const c of cropListToGroup) {
+                if(!grouped[c.cropName]) {                    
                     grouped[c.cropName] = {
+                        id: c.id,
                         cropName: c.cropName,
                         totalQuantity: 0,
                         earliestHarvest: c.harvestDate,
@@ -125,6 +206,7 @@ const CropSummaryScreen = () => {
                 grouped[c.cropName].totalFieldCount++;
                 if(new Date(c.harvestDate) < new Date(grouped[c.cropName].earliestHarvest)) {
                     grouped[c.cropName].earliestHarvest = c.harvestDate;
+                    grouped[c.cropName].id = c.id;
                 }
             }
             return Object.values(grouped);
@@ -179,7 +261,7 @@ const CropSummaryScreen = () => {
         if(user && user?.role === "farmer") {
             router.push({
                 pathname: '/',
-                params: { selectedCropFromSummaryPage: item.cropName }
+                params: { selectedCropFromSummaryPage: item.id }
             });
         } else if(user?.role === "buyer") {
             router.push({
@@ -188,6 +270,11 @@ const CropSummaryScreen = () => {
                     cropQuantity: item.totalQuantity,
                     earliestCropHarvestDate: item.earliestHarvest 
                 }
+            });
+        } else if(user?.role === "admin") {
+            router.push({
+                pathname: "/",
+                params: { selectedCropFromSummaryPage: item.id }
             });
         }        
     }
@@ -202,15 +289,33 @@ const CropSummaryScreen = () => {
                 <Text style={styles.crop}>{t("cropName")}: {item.cropName}</Text>
                 <Text>📍 {item.locationName}</Text>
                 <Text>🌾 {t("totalQuantity")}: {item.totalQuantity} {t("ton")}</Text>
-                <Text>📅 {t("earliestHarvest")}: {item.earliestHarvest}</Text>
+                <Text>📅 {t("earliestHarvest")}: {item.earliestHarvest.split("T")[0]} ({getDaysRemaining(item.earliestHarvest)})</Text>
                 <Text>📊 {t("averageYieldNearby")} (1000 km): {item.avgYieldNearby} ton</Text>
             </View>
         </TouchableOpacity>
         
     );
       
+    function getDaysRemaining(harvestDateString: string): string {
+        const now = new Date();
+        const harvestDate = new Date(harvestDateString);
+        const diffMs = harvestDate.getTime() - now.getTime();
+        const daysRemaining = Math.ceil(diffMs / (1000*60*60*24));
+        if (daysRemaining > 0) {
+            console.log(`${daysRemaining} days remaining`);
+            return `${daysRemaining} days remaining`;
+        } else if (daysRemaining === 0) {
+            console.log("Harvest today!");
+            return `Harvest today!`;
+        } else {
+            console.log(`Harvest ended ${Math.abs(daysRemaining)} days ago`);
+            return `Harvest ended ${Math.abs(daysRemaining)} days ago`;
+        }
+    }
+
     return (
         <View style={styles.container}>
+            <GlobalSettingsMenu />
             <Text style={styles.title}>Crop Summary</Text>
             <TextInput 
                 style = {styles.input}
@@ -239,7 +344,7 @@ const CropSummaryScreen = () => {
 export default CropSummaryScreen;
 
 const styles = StyleSheet.create({
-    container: { flex: 1, padding: 16, backgroundColor: "#fff" },
+    container: { flex: 1, padding: 16, backgroundColor: "#fff", paddingTop: 60 },
     title: { fontSize: 22, fontWeight: "bold", marginBottom: 10 },
     input: {
       borderWidth: 1,

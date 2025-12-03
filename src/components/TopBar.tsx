@@ -57,6 +57,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: TOKENS.border,
     padding: 10,
+    width: "77%",
     // backdropFilter: "blur(12px)" as any, // web only, ignored native
     ...TOKENS.cardShadow,
   },

@@ -90,7 +90,7 @@ export const AuthProvider = ({ children }: {children: ReactNode }) => {
     <AuthContext.Provider
       value={{ userRole, user, isAuthenticated, login, register, logout }}
     >
-      {children}
+      {children}      
     </AuthContext.Provider>
   );
 
@@ -99,6 +99,6 @@ export const AuthProvider = ({ children }: {children: ReactNode }) => {
 export const useAuth = () => {
     const ctx = useContext(AuthContext);
     if(!ctx)
-        throw new Error("iseAuth must be used within AuthProvider");
+        throw new Error("useAuth must be used within AuthProvider");
     return ctx;
 };

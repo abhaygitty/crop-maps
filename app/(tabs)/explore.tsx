@@ -8,12 +8,13 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import CropListScreen from '@/src/screens/CropListScreen';
+import CropSummaryScreen from '../crops-summary';
 
 export default function TabTwoScreen() {
   return (
 
     
-        <CropListScreen/>
+        <CropSummaryScreen/>
    
     
   );

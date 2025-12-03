@@ -7,6 +7,7 @@ import * as Location from "expo-location";
 import { Picker } from "@react-native-picker/picker";
 import { ensureAllTables } from "@/src/db/migration";
 import { cropSchema, userCropSchema, userSchema, weatherSchema } from "@/src/db/schema";
+import { useDatabaseLifecycle } from "@/src/db/db-backup-restore";
 
 let LinearGradient: any = null;
 try {
@@ -23,7 +24,7 @@ export default function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
   const [userMessage, setUserMessage] = useState("");
   const [loading, setLoading] = useState<boolean>(false);
-  const [roleHint, setRoleHint] = useState<"farmer" | "buyer">("farmer");
+  const [roleHint, setRoleHint] = useState<"farmer" | "buyer" | "admin">("farmer");
 
   useEffect(() => {
     Animated.timing(fade, {
@@ -35,11 +36,18 @@ export default function LoginScreen() {
 
   // useEffect(() => {
   //   (async () => {
-  //     console.log("ensure all tables triggered...");
-  //     await ensureAllTables([cropSchema, userSchema, weatherSchema, userCropSchema]);
-  //     console.log("ensure all tables triggered...");
+  //     // console.log("ensure all tables triggered...");
+  //     // await ensureAllTables([cropSchema, userSchema, weatherSchema, userCropSchema]);
+  //     // console.log("ensure all tables triggered...");
+  //     // useDatabaseLifecycle();
   //   })();
   // }, []);
+
+  /*
+    Buyer - crops summary screen: crops based on current location within radius shown. 
+    Farmer - MapsScreen or home screen
+    Admin - MapsScreen or home screen. it should instead be all crops available. Grouped by crops as segments.
+  */
 
   const handleLogin = async () => {
     setError(null);
@@ -51,10 +59,13 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       const success = await login(email, password);
+      
       if (success) {
-        if(user?.role === "farmer")
+        if(user?.role === "admin") {
           router.push("/");
-        else if(user?.role === "buyer") {
+        } else if(user?.role === "farmer") {
+          router.push("/");
+        } else if(user?.role === "buyer") {
           router.push("/crops-summary");
         } else {
           setUserMessage("Invalid user role. Please login again");
@@ -166,6 +177,7 @@ export default function LoginScreen() {
             <Picker selectedValue={roleHint} onValueChange={(v) => setRoleHint(v as any)} style={styles.picker}>
               <Picker.Item label="Farmer" value="farmer" />
               <Picker.Item label="Buyer" value="buyer" />
+              <Picker.Item label="Admin" value="admin" />
             </Picker>
           </View>
           <Text style={styles.note}>Use email containing <Text style={{ fontWeight: "700" }}>farmer</Text> or <Text style={{ fontWeight: "700" }}>buyer</Text> for demo</Text>
