@@ -15,7 +15,7 @@ const openAIClient = new OpenAI({
 
 export async function getCurrentLocation() {
     let currentLocation = await Location.getCurrentPositionAsync({});
-    const currentLocationCordinates = BENGALURUURBAN;
+    const currentLocationCordinates = CHIKKABALLAPUR;
     const [lat, lon] = currentLocationCordinates.split(":").map(Number);
     currentLocation.coords.latitude = lat;
     currentLocation.coords.longitude = lon;

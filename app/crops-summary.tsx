@@ -41,18 +41,12 @@ const CropSummaryScreen = () => {
         })();
     }, [location]);    
 
-    // useEffect(() => {
-    //     loadCropSummary();
-    // }, [crops]);
-
     useEffect(() => {
         let isActive = true;
-    
         // async function definition and invokation - IIFE Immediately Invoked Function Expression.
         (async () => {
           console.log("use effect for transcription executed");
           if (transcription && isActive) {
-            // await renderCropQueryResults(transcription);
             await renderCropQueryResults(transcription, crops);
           }
         })();
@@ -99,41 +93,7 @@ const CropSummaryScreen = () => {
     const loadCropSummary = async (retrievedCrops: Crop[]) => {
         console.log("load crop summary invoked...");
         setLoading(true);
-        try {     
-            // let cropList: Crop[] = [];       
-            // if(user) {
-            //     if(user.role === "farmer" && user.id) {
-            //         const userCrops = await getCropsForUser(user.id);
-            //         for(const c of userCrops){
-            //             const cropItem: Crop = {
-            //                 cropName: c.cropName,
-            //                 harvestDate: c.harvestDate,
-            //                 location: c.location,
-            //                 locationName: c.locationName,
-            //                 quantity: c.quantity,
-            //                 id: c.id,
-            //                 boundary: c.boundary
-            //             };
-            //             cropList.push(cropItem);
-            //         }                
-            //         setCrops(cropList);
-            //         console.log("farmer role detected. allCrops object length: ", userCrops.length);
-            //         // return true;
-            //     } else if(user.role === "buyer") {
-            //         cropList = await getCropsList();
-            //         console.log("buyer role detected. allCrops object length: ", cropList.length);
-            //         setCrops(cropList);                
-            //         // return true;
-            //     } else {
-            //         console.log("no crops...neither farmer nor buyer");
-            //         // return false;      
-            //     }
-            // }
-            
-            
-            // loadCrops();
-            // const crops = await getCropsForUser(user && user.id ? user.id : 9);
-            // setCrops(crops);
+        try {
             if(retrievedCrops && retrievedCrops.length !== 0) {
                 console.log("crops loaded in state object", retrievedCrops.length);
                 

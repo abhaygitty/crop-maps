@@ -402,7 +402,7 @@ export const MapScreen: React.FC = () => {
         })}
       </MapView>
 
-    {/* Popup Modal */}
+      {/* Popup Modal */}
       <Modal
         visible={!!selectedCrp}
         animationType="slide"
@@ -430,7 +430,6 @@ export const MapScreen: React.FC = () => {
         </View>
       </Modal>
       <TopBar onFlyTo={flyTo} />
-      {/* <Button title="Logout" onPress={handleLogoutUser}/> */}
       <TouchableOpacity style={styles.toggleButton} onPress={togglePicker}>
         <Ionicons name="language" size={22} color="#fff" />
       </TouchableOpacity>

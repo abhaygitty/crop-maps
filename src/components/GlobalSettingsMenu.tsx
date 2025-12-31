@@ -54,16 +54,10 @@ export const GlobalSettingsMenu: React.FC = () => {
     await logout();
     router.replace("/login");
   };
-
-  // const togglePicker = () => {
-  //   const newValue = !isLanguagePicker;
-  //   setIsLanguagePicker(newValue);
-  //   height.value = withTiming(newValue ? 1 : 0, { duration: 300 });
-  // };
   
   return (
-        <>
-        {/* Hamburger button */}
+    <>
+      {/* Hamburger button */}
       <TouchableOpacity style={styles.menuButton} onPress={openSettings}>
         <Ionicons name="menu" size={22} color="#fff" />
       </TouchableOpacity>
@@ -119,9 +113,6 @@ export const GlobalSettingsMenu: React.FC = () => {
                 <View style={styles.languageContainer}>
                   <LanguageSelector />
                 </View>
-                // <Animated.View style={[styles.languageContainer, animatedStyle]}>
-                //   {isLanguageOpen && <LanguageSelector />}
-                // </Animated.View>
               )}
 
               {/* Add more items here as needed */}
@@ -139,8 +130,8 @@ export const GlobalSettingsMenu: React.FC = () => {
           </Animated.View>
         </View>
       </Modal>
-      </>
-    );
+    </>
+  );
 };
 
 const styles = StyleSheet.create({

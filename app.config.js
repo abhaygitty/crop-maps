@@ -9,7 +9,12 @@ export default {
         ios: {
             bundleIdentifier: "com.abhay.cropmaps",
             "infoPlist": {
-               "ITSAppUsesNonExemptEncryption": false
+                "ITSAppUsesNonExemptEncryption": false,
+                "NSLocationWhenInUseUsageDescription": "We use your location to center the map and tag crops accurately.",
+                "NSLocationAlwaysAndWhenInUseUsageDescription": "Location access improves map accuracy.",
+                "NSMicrophoneUsageDescription": "Microphone access is required for voice input.",
+                "NSCameraUsageDescription": "Camera access is required for future features.",
+                "NSPhotoLibraryUsageDescription": "Photo library access may be required for uploads."
             }
         },
         android: {
@@ -17,6 +22,7 @@ export default {
         },
         extra: {
             openaiApiKey: process.env.OPENAI_API_KEY,
+            googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY,
             "eas": {
                 "projectId": "4e7ed654-0073-478d-8200-3195a17f28a5"
             },

@@ -24,6 +24,15 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      "react-native-reanimated",
+      [
+        "react-native-maps",
+        {
+          "ios": {
+            "useGoogleMaps": true
+          }
+        }
+      ],
       "expo-router",
       [
         "expo-splash-screen",
