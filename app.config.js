@@ -4,10 +4,20 @@ export default {
     expo: {
         name: "vana-smrithi",
         slug: "crop-maps",
-        version: "1.0.0",
+        version: "1.0.1",
         sdkVersion: "53.0.0",
+        orientation: "portrait",
+        scheme: "cropmaps",
+        userInterfaceStyle: "automatic",
+        newArchEnabled: true,
+        icon: "./assets/images/icon.png",
+
         ios: {
             bundleIdentifier: "com.abhay.cropmaps",
+            supportsTablet: true,
+            config: {
+                googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY
+            },
             "infoPlist": {
                 "ITSAppUsesNonExemptEncryption": false,
                 "NSLocationWhenInUseUsageDescription": "We use your location to center the map and tag crops accurately.",
@@ -18,7 +28,44 @@ export default {
             }
         },
         android: {
-            "package": "com.abhay.cropmaps"
+            "package": "com.abhay.cropmaps",
+            adaptiveIcon: {
+                foregroundImage: "./assets/images/adaptive-icon.png",
+                backgroundColor: "#ffffff",
+            },
+            edgeToEdgeEnabled: true,
+        },
+        web: {
+            bundler: "metro",
+            output: "static",
+            favicon: "./assets/images/favicon.png",
+        },
+        plugins: [
+            "react-native-reanimated",
+            [
+              "react-native-maps",
+              {
+                ios: {
+                  useGoogleMaps: true,
+                },
+              },
+            ],
+            "expo-router",
+            [
+              "expo-splash-screen",
+              {
+                image: "./assets/images/splash-icon.png",
+                imageWidth: 200,
+                resizeMode: "contain",
+                backgroundColor: "#ffffff",
+              },
+            ],
+            "expo-sqlite",
+            "expo-localization",
+          ],
+      
+          experiments: {
+            typedRoutes: true,
         },
         extra: {
             openaiApiKey: process.env.OPENAI_API_KEY,
