@@ -41,7 +41,6 @@ export default {
             favicon: "./assets/images/favicon.png",
         },
         plugins: [
-            "react-native-reanimated",
             [
               "react-native-maps",
               {
