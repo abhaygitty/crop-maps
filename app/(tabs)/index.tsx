@@ -1,3 +1,4 @@
+import "react-native-url-polyfill/auto";
 import { ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaView, StatusBar } from "react-native";
 import { MapScreen } from "../../src/screens/MapScreen";

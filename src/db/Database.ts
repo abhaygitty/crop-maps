@@ -1,4 +1,5 @@
 import { openDatabase, runQueryWithAutoBackup } from "./db-backup-restore";
+import { supabase } from "./supabase";
 
 const db = openDatabase();
 
@@ -60,6 +61,8 @@ async function initDB() {
 }
 
 export async function addCrop(userId: number, cropName: string, location: string, harvestDate: string, quantity: number, boundary: string, locationName: string) {
+  const supabaseCrops = await getAllCrops();
+  
   const result = await runQueryWithAutoBackup(
     db,
     `INSERT INTO crops (cropName, location, harvestDate, quantity, boundary, locationName) VALUES (?, ?, ?, ?, ?, ?)`,
@@ -78,6 +81,24 @@ export async function addCrop(userId: number, cropName: string, location: string
      [userId, cropId, "owner"]
   );
 }
+
+async function getAllCrops() {
+  const result = await supabase
+  .from("crops")
+  .select("*");
+
+  console.log(result);
+  return result;
+};
+
+export async function getAllUsersSupabase() {
+  const data = await supabase
+  .from("users")
+  .select("*");
+
+  console.log(data);
+  return data;
+};
 
 export async function deleteCrop(cropId: number) {
   const result = await runQueryWithAutoBackup(

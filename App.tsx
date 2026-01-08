@@ -1,3 +1,4 @@
+import "react-native-url-polyfill/auto";
 import React, { useEffect, useState } from "react";
 import { getCropsList } from "./src/db/Database";
 import { StyleSheet } from 'react-native';

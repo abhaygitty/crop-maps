@@ -183,6 +183,30 @@ export const MapScreen: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    fetch("https://www.google.com")
+      .then(() => console.log("Internet OK"))
+      .catch(e => console.log("Internet FAIL", e));
+  }, []);
+
+  useEffect(() => {
+    fetch("https://https://lpqgshiuiulyjvsbbuws.supabase.co/rest/v1/")
+      .then(r => {
+        console.log("Supabase reachable, status:", r.status);
+      })
+      .catch(e => {
+        console.log("Supabase NOT reachable:", e);
+      });
+  }, []);
+
+  useEffect(() => {
+    fetch("https://api.github.com")
+      .then(r => r.json())
+      .then(() => console.log("GitHub reachable"))
+      .catch(e => console.log("GitHub FAIL", e));
+  }, []);
+
+  
+  useEffect(() => {
     let isActive = true;
     // async function definition and invokation - IIFE Immediately Invoked Function Expression.
     (async () => {

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { View, TextInput, Button, Text, Alert, TouchableOpacity, Animated, AccessibilityInfo, KeyboardAvoidingView, ActivityIndicator, Platform, StyleSheet } from "react-native";
 import { useAuth } from "@/src/context/AuthContext";
 import { router } from "expo-router";
-import { getAllUserCrops, getAllUsers } from "@/src/db/Database";
+import { getAllUserCrops, getAllUsers, getAllUsersSupabase } from "@/src/db/Database";
 import * as Location from "expo-location";
 import { Picker } from "@react-native-picker/picker";
 import { ensureAllTables } from "@/src/db/migration";
@@ -88,6 +88,8 @@ export default function LoginScreen() {
   const loadUsers = async () => {
     try {
         const users = await getAllUsers();
+        const supabaseUsers = await getAllUsersSupabase();
+        console.log(supabaseUsers);
         console.log(users);
     } catch(error) {
         console.log("error fetching users: ", error);

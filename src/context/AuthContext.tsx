@@ -7,6 +7,7 @@ import {
   getCurrentToken,
   getCurrentUser,
 } from "@/src/services/authService";
+import { supabase } from "../db/supabase";
 
 type Role = "farmer" | "buyer" | "admin";
 
@@ -59,6 +60,12 @@ export const AuthProvider = ({ children }: {children: ReactNode }) => {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     const token = await loginUser(email, password);
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email, 
+      password
+    });
+    console.log("data from supabase login: ", data);
+
     if (token) {
       const role = await getCurrentUserRole();
       const user = await getCurrentUser();
@@ -77,6 +84,11 @@ export const AuthProvider = ({ children }: {children: ReactNode }) => {
     role: "farmer" | "buyer" | "admin"
   ): Promise<boolean> => {
     await registerUser({ name, email, passwordHash, role });
+    const password = passwordHash;
+    const {data, error} = await supabase.auth.signUp({
+      email, 
+      password,
+    });
     return true;
   };
 

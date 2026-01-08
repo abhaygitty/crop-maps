@@ -15,6 +15,9 @@ export default {
                 "NSMicrophoneUsageDescription": "Microphone access is required for voice input.",
                 "NSCameraUsageDescription": "Camera access is required for future features.",
                 "NSPhotoLibraryUsageDescription": "Photo library access may be required for uploads."
+            },
+            "NSAppTransportSecurity": {
+               "NSAllowsArbitraryLoads": true
             }
         },
         android: {
