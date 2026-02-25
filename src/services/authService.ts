@@ -70,7 +70,9 @@ export async function registerUser(user: User): Promise<boolean> {
 }
 
 export async function loginUser(email: string, password: string): Promise<string | null> {
+    Alert.alert("Login attempt in authService");
     const user = await db.getFirstAsync<User>(`SELECT * FROM users WHERE email = ?`, [email]);
+    Alert.alert("Login attempt: querying database", email + " rows:  " + JSON.stringify(user));
     if(!user) return null;
 
     // let valid = await bcrypt.compare(password, user.password)

@@ -6,7 +6,7 @@ const DB_PATH = `${FileSystem.documentDirectory}/SQLite/`;
 const BACKUP_PATH = `${DB_PATH}/crops-backup.db`;
 let db: SQLite.SQLiteDatabase | null = null; 
 
-let backupTimeout: NodeJS.Timeout | null = null;
+let backupTimeout: NodeJS.Timeout | number | null = null;
 const BACKUP_DELAY_MS = 10_000; // 10 seconds debounce delay
 let backupInProgress = false;
 let pendingBackup = false;

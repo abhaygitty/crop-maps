@@ -4,7 +4,7 @@ export default {
     expo: {
         name: "vana-smrithi",
         slug: "crop-maps",
-        version: "1.0.1",
+        version: "1.0.2",
         sdkVersion: "53.0.0",
         orientation: "portrait",
         scheme: "cropmaps",

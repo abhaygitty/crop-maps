@@ -34,14 +34,14 @@ export default function LoginScreen() {
     }).start();
   }, []);
 
-  // useEffect(() => {
-  //   (async () => {
-  //     // console.log("ensure all tables triggered...");
-  //     // await ensureAllTables([cropSchema, userSchema, weatherSchema, userCropSchema]);
-  //     // console.log("ensure all tables triggered...");
-  //     // useDatabaseLifecycle();
-  //   })();
-  // }, []);
+  useEffect(() => {
+    (async () => {
+      console.log("ensure all tables triggered...");
+      await ensureAllTables([cropSchema, userSchema, weatherSchema, userCropSchema]);
+      console.log("ensure all tables triggered...");
+      // useDatabaseLifecycle();
+    })();
+  }, []);
 
   /*
     Buyer - crops summary screen: crops based on current location within radius shown. 
